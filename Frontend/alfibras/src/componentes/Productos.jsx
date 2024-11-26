@@ -29,7 +29,7 @@ function Productos() {
     ],
   };
 
-  // Función para agregar un producto al carrito
+ 
   const agregarAlCarrito = async (productoId, cantidad) => {
     try {
       const response = await axios.post("http://localhost:9001/api/carrito", {
