@@ -1,0 +1,31 @@
+POST http://localhost:9001/api/clientes HTTP/1.1
+content-Type: application/json
+
+{
+    "nombre": "emanuel garcia",
+    "edad": 34,
+    "email": "juan_perez@gmail.com",
+    "telefono": 3267890432,
+    "direccion": "126b 87-56"
+}
+###
+GET http://localhost:9001/api/clientes HTTP/1.1
+
+
+###
+GET http://localhost:9001/api/clientes/673f8149681945b6a7a1919c HTTP/1.1
+
+###
+PUT http://localhost:9001/api/clientes/673f8149681945b6a7a1919c HTTP/1.1
+Content-Type: application/json
+
+{
+    "nombre": "thomas torres",
+    "edad": "43",
+    "email": "thomas@gmail.com",
+    "telefono": "3267890434",
+    "direccion": "126b 87-56"
+}
+
+###
+DELETE http://localhost:9001/api/clientes/67352e2ee4f4071fc562a188 HTTP/1.1

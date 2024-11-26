@@ -1,0 +1,29 @@
+POST http://localhost:9001/api/ordenes HTTP/1.1
+content-Type: application/json
+
+{
+    "cliente_id": "673f8149681945b6a7a1919c",
+    "fecha": "2024-11-13",
+    "estado": "pendiente",
+    "total": 250.500
+}
+###
+GET http://localhost:9001/api/ordenes HTTP/1.1
+
+
+###
+GET http://localhost:9001/api/ordenes/673f83d16463d796b8b56f29 HTTP/1.1
+
+###
+PUT http://localhost:9001/api/ordenes/673f83d16463d796b8b56f29 HTTP/1.1
+Content-Type: application/json
+
+{
+    "cliente_id": "9",
+    "fecha": "2024-12-14",
+    "estado": "entregado",
+    "total": 250.500
+}
+
+###
+DELETE http://localhost:9001/api/ordenes/67352e2ee4f4071fc562a188 HTTP/1.1

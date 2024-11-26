@@ -1,0 +1,27 @@
+POST http://localhost:9001/api/admins HTTP/1.1
+content-Type: application/json
+
+{
+    "nombre": "mathias nieto",
+    "email": "mathias_nieto@gmail.com",
+    "telefono": "3227859304"
+}
+###
+GET http://localhost:9001/api/admins HTTP/1.1
+
+
+###
+GET http://localhost:9001/api/admins/673f7d86833a602434e2400c HTTP/1.1
+
+###
+PUT  http://localhost:9001/api/admins/673f7d86833a602434e2400c HTTP/1.1
+Content-Type: application/json
+
+{
+    "nombre": "Maria min",
+    "email": "mminmaria@gmail.com",
+    "telefono": "3006318247"
+}
+
+###
+DELETE http://localhost:9001/api/admins/673cc94a5f73f10fd7c3b7f5 HTTP/1.1
