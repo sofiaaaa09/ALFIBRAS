@@ -1,66 +1,66 @@
 import Joi from "joi";
 
-// Validaciones para los campos del detalle de la orden
-const orden_id = Joi.string().required().messages({
-  "string.base": "El campo orden_id debe ser una cadena de texto.",
-  "any.required": "El orden_id es un campo requerido.",
+// Validación para el campo "numero_producto" (debe ser un número)
+const numero_producto = Joi.number().required().messages({
+  "number.base": "El campo numero_producto debe ser un número.",
+  "any.required": "El numero_producto es un campo requerido.",
 });
 
-const producto_id = Joi.string().required().messages({
-  "string.base": "El campo producto_id debe ser una cadena de texto.",
-  "any.required": "El producto_id es un campo requerido.",
-});
-
-const categoria_id = Joi.string().required().messages({
-  "string.base": "El campo categoria_id debe ser una cadena de texto.",
-  "any.required": "El categoria_id es un campo requerido.",
-});
-
+// Validación para el campo "cantidad" (debe ser un número mayor que 0)
 const cantidad = Joi.number().min(1).required().messages({
   "number.base": "La cantidad debe ser un número.",
   "number.min": "La cantidad debe ser al menos 1.",
   "any.required": "La cantidad es un campo requerido.",
 });
 
+// Validación para el campo "precio_unitario" (debe ser un número mayor o igual que 0)
 const precio_unitario = Joi.number().min(0).required().messages({
-  "number.base": "El precio unitario debe ser un número.",
-  "number.min": "El precio unitario debe ser al menos 0.",
-  "any.required": "El precio unitario es un campo requerido.",
+  "number.base": "El precio_unitario debe ser un número.",
+  "number.min": "El precio_unitario no puede ser menor a 0.",
+  "any.required": "El precio_unitario es un campo requerido.",
 });
 
+// Validación para el campo "personalizacion" (puede ser un string vacío o con texto)
 const personalizacion = Joi.string().allow("").messages({
   "string.base": "El campo personalizacion debe ser una cadena de texto.",
 });
 
-// Esquemas de validación para las rutas
+// Validación para el campo "archivo" (puede ser una cadena vacía o un string con la ruta del archivo)
+const archivo = Joi.string().allow(null, "").messages({
+  "string.base": "El campo archivo debe ser una cadena de texto válida o nulo.",
+});
+
+// **Esquemas de validación**
+
 export const createDetalleOrdenSchema = Joi.object({
-  orden_id,
-  producto_id,
-  categoria_id,
+  numero_producto,
   cantidad,
   precio_unitario,
   personalizacion,
+  archivo,
 });
 
 export const getDetalleOrdenParamsSchema = Joi.object({
-  id: Joi.string().required().messages({
-    "string.base": "El campo ID debe ser una cadena de texto.",
-    "any.required": "El ID es un campo requerido.",
+  id: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+    "string.pattern.base": "El campo ID debe ser un ObjectId válido.",
+    "any.required": "El campo ID es requerido.",
+  }),
+  numero_orden: Joi.string().optional().messages({
+    "string.base": "El campo numero_orden debe ser una cadena de texto.",
   }),
 });
 
 export const updateDetalleOrdenSchema = Joi.object({
-  orden_id,
-  producto_id,
-  categoria_id,
+  numero_producto,
   cantidad,
   precio_unitario,
   personalizacion,
+  archivo,
 });
 
 export const deleteDetalleOrdenSchema = Joi.object({
-  id: Joi.string().required().messages({
-    "string.base": "El campo ID debe ser una cadena de texto.",
-    "any.required": "El ID es un campo requerido.",
+  id: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+    "string.pattern.base": "El campo ID debe ser un ObjectId válido.",
+    "any.required": "El campo ID es requerido.",
   }),
 });

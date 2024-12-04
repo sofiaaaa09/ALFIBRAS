@@ -2,7 +2,7 @@ POST http://localhost:9001/api/facturas HTTP/1.1
 content-Type: application/json
 
 {
-    "orden_id": "673f83d16463d796b8b56f29",
+    "orden_id": "11",
     "fecha": "2024-11-15",
     "total": 500.000
 }

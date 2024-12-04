@@ -1,35 +1,37 @@
+### 
 POST http://localhost:9001/api/productos HTTP/1.1
-content-Type: application/json
+Content-Type: application/json
 
 {
-    "nombre": "Puerta corrediza",
-    "descripcion": "Puerta trafic corrediza",
-    "precio": 120.000,
-    "categoria":"Puertas",
-    "cantidad_inicial":"12",
-    "stock_min":"10",
-    "stock_max":"100"
+  "nombre": "Mesas fibra verde",
+  "descripcion": "Mesas fibra 30x30 ",
+  "precio": 120000,
+  "categoria": "Mesa",
+  "cantidad_inicial": 12,
+  "stock_min": 10,
+  "stock_max": 100
 }
-###
+
+### 
 GET http://localhost:9001/api/productos HTTP/1.1
 
-
-###
+### 
 GET http://localhost:9001/api/productos/673f84e8b13b397658fe00e8 HTTP/1.1
 
-###
+### 
 PUT http://localhost:9001/api/productos/673f84e8b13b397658fe00e8 HTTP/1.1
 Content-Type: application/json
 
 {
-    "nombre": "Puerta corrediza",
-    "descripcion": "Techo alto trafic ",
-    "precio": 120.000,
-    "categoria":"Techo",
-    "cantidad_inicial":"14",
-    "stock_min":"10",
-    "stock_max":"100"
+  "nombre": "Puerta corrediza",
+  "descripcion": "Techo alto tráfico",
+  "precio": 130000,
+  "categoria": "Techo",
+  "cantidad_inicial": 15,
+  "stock_min": 10,
+  "stock_max": 100,
+  "numero_producto": 202
 }
 
-###
+### 
 DELETE http://localhost:9001/api/productos/67352e2ee4f4071fc562a188 HTTP/1.1

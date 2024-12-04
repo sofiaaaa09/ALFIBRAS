@@ -1,9 +1,10 @@
 import Joi from "joi";
 
 // Validaciones para los campos de la orden
-const cliente_id = Joi.string().required().messages({
-  "string.base": "El campo cliente_id debe ser una cadena de texto.",
-  "any.required": "El cliente_id es un campo requerido.",
+const cliente_correo = Joi.string().email().required().messages({
+  "string.base": "El campo cliente_correo debe ser una cadena de texto.",
+  "string.email": "El cliente_correo debe ser un correo electrónico válido.",
+  "any.required": "El cliente_correo es un campo requerido.",
 });
 
 const fecha = Joi.date().required().messages({
@@ -23,31 +24,51 @@ const total = Joi.number().min(0).required().messages({
   "any.required": "El total es un campo requerido.",
 });
 
-// Esquemas de validación para las rutas
+const detalles = Joi.array()
+  .items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)) // ID válidos de ObjectId
+  .required()
+  .messages({
+    "array.base": "Los detalles deben ser un arreglo de IDs válidos.",
+    "any.required": "Los detalles son un campo requerido.",
+  });
+
+
+// Esquema de validación para la creación de una orden
 export const createOrdenSchema = Joi.object({
-  cliente_id,
-  fecha,
-  estado,
-  total,
+cliente_correo,
+fecha,
+estado,
+total,
+detalles, // Nuevo campo
 });
 
+// Esquema de validación para actualizar una orden
+export const updateOrdenSchema = Joi.object({
+cliente_correo,
+fecha,
+estado,
+total,
+detalles,
+});
+
+// Esquema de validación para obtener una orden por ID (parámetros)
 export const getOrdenParamsSchema = Joi.object({
-  id: Joi.string().required().messages({
-    "string.base": "El campo ID debe ser una cadena de texto.",
-    "any.required": "El ID es un campo requerido.",
+id: Joi.string()
+  .pattern(/^[0-9a-fA-F]{24}$/)
+  .required()
+  .messages({
+    "string.pattern.base": "El campo ID debe ser un ObjectId válido.",
+    "any.required": "El campo ID es requerido.",
   }),
 });
 
-export const updateOrdenSchema = Joi.object({
-  cliente_id,
-  fecha,
-  estado,
-  total,
-});
-
+// Esquema de validación para borrar una orden (parámetros)
 export const deleteOrdenSchema = Joi.object({
-  id: Joi.string().required().messages({
-    "string.base": "El campo ID debe ser una cadena de texto.",
-    "any.required": "El ID es un campo requerido.",
+id: Joi.string()
+  .pattern(/^[0-9a-fA-F]{24}$/)
+  .required()
+  .messages({
+    "string.pattern.base": "El campo ID debe ser un ObjectId válido.",
+    "any.required": "El campo ID es requerido.",
   }),
 });

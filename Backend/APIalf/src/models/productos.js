@@ -1,12 +1,10 @@
 import mongoose from "mongoose";
 
-
-const categoriasDisponibles = ["Puertas", "Techos", "Macetas", "Silleteria", "Cajeros Dom"];
-
 const productoSchema = new mongoose.Schema({
   nombre: {
     type: String,
     required: true,
+    unique: true,
   },
   descripcion: {
     type: String,
@@ -16,9 +14,13 @@ const productoSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  numero_producto: {
+    type: Number,
+    required: true,
+    unique: true, 
+  },
   categoria: {
-    type: mongoose.Schema.Types.ObjectId, 
-    ref:'Categoria' ,
+    type: String,
     required: true,
   },
   cantidad_inicial: {
@@ -28,15 +30,15 @@ const productoSchema = new mongoose.Schema({
   stock_min: {
     type: Number,
     required: true,
-    min: 10, // Validación de mínimo
+    min: 10,
   },
   stock_max: {
     type: Number,
     required: true,
-    max: 100, // Validación de máximo
+    max: 100,
   },
 }, {
-  timestamps: true, // Añade createdAt y updatedAt automáticamente
+  timestamps: true,
 });
 
 const Producto = mongoose.model("Producto", productoSchema);

@@ -1,11 +1,11 @@
 import express from "express";
 import {
+  crearCategoria,
+  obtenerCategorias,
+  obtenerCategoriaPorId,
   actualizarCategoria,
   borrarCategoria,
-  crearCategoria,
-  obtenerCategoriaPorId,
-  obtenerCategorias,
-} from "../controllers/controladorcategoria.js"; // Cambié el controlador a controladorCategoria.js
+} from "../controllers/controladorcategoria.js";
 
 const routes = express.Router();
 
@@ -25,7 +25,7 @@ const routes = express.Router();
  *         estado:
  *           type: string
  *           enum: [activo, inactivo]
- *           description: Estado de la categoría (activo o inactivo)
+ *           description: Estado de la categoría
  *       required:
  *         - nombre_categoria
  *         - descripcion
@@ -41,7 +41,9 @@ const routes = express.Router();
  * /api/categorias:
  *   post:
  *     summary: Crea una nueva categoría
- *     tags: [categorias]
+ *     tags: [Categorías]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -52,14 +54,16 @@ const routes = express.Router();
  *       200:
  *         description: Categoría creada exitosamente
  */
-routes.post("/categorias", crearCategoria);
+routes.post("/", crearCategoria);
 
 /**
  * @swagger
  * /api/categorias:
  *   get:
  *     summary: Obtiene todas las categorías
- *     tags: [categorias]
+ *     tags: [Categorías]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de categorías
@@ -70,43 +74,49 @@ routes.post("/categorias", crearCategoria);
  *               items:
  *                 $ref: '#/components/schemas/Categoria'
  */
-routes.get("/categorias", obtenerCategorias);
+routes.get("/", obtenerCategorias);
 
 /**
  * @swagger
  * /api/categorias/{id}:
  *   get:
  *     summary: Obtiene una categoría por ID
- *     tags: [categorias]
+ *     tags: [Categorías]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *         description: ID de la categoría
  *     responses:
  *       200:
- *         description: Información de la categoría
+ *         description: Información de la categoría obtenida
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Categoria'
+ *       404:
+ *         description: Categoría no encontrada
  */
-routes.get("/categorias/:id", obtenerCategoriaPorId);
+routes.get("/:id", obtenerCategoriaPorId);
 
 /**
  * @swagger
  * /api/categorias/{id}:
  *   put:
  *     summary: Actualiza una categoría por ID
- *     tags: [categorias]
+ *     tags: [Categorías]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *         description: ID de la categoría
  *     requestBody:
  *       required: true
@@ -116,29 +126,33 @@ routes.get("/categorias/:id", obtenerCategoriaPorId);
  *             $ref: '#/components/schemas/Categoria'
  *     responses:
  *       200:
- *         description: Categoría actualizada
+ *         description: Categoría actualizada exitosamente
+ *       404:
+ *         description: Categoría no encontrada
  */
-routes.put("/categorias/:id", actualizarCategoria);
+routes.put("/:id", actualizarCategoria);
 
 /**
  * @swagger
  * /api/categorias/{id}:
  *   delete:
  *     summary: Elimina una categoría por ID
- *     tags: [categorias]
+ *     tags: [Categorías]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *         description: ID de la categoría
  *     responses:
  *       200:
- *         description: Categoría eliminada
+ *         description: Categoría eliminada exitosamente
  *       404:
  *         description: Categoría no encontrada
  */
-routes.delete("/categorias/:id", borrarCategoria);
+routes.delete("/:id", borrarCategoria);
 
 export default routes;

@@ -2,9 +2,10 @@ POST http://localhost:9001/api/admins HTTP/1.1
 content-Type: application/json
 
 {
-    "nombre": "mathias nieto",
-    "email": "mathias_nieto@gmail.com",
-    "telefono": "3227859304"
+    "nombre": "Thomas Mondragón",
+    "email": "thomas.mondragon@example.com",
+    "telefono": "3192377472",
+    "password": "thomas123"
 }
 ###
 GET http://localhost:9001/api/admins HTTP/1.1
