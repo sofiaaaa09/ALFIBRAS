@@ -1,49 +1,44 @@
-import detalleOrdenSchema from '../models/detalle_ordenes.js';
-import productoSchema from '../models/productos.js';  // Asegúrate de importar el modelo de producto
 import { validatorHandler } from "../midleware/validator.handler.js";
-import upload from "../config/multer.js";  
-import {
-  createDetalleOrdenSchema,
+import detalleOrdenSchema from "../models/detalle_ordenes.js";
+import productoSchema from "../models/productos.js";
+import ordenSchema from "../models/ordenes.js";
+import { createDetalleOrdenSchema,
   getDetalleOrdenParamsSchema,
-  updateDetalleOrdenSchema,
-  deleteDetalleOrdenSchema,
-} from "../validators/detalleOrdenValidarDTO.js";
+   updateDetalleOrdenSchema,
+    deleteDetalleOrdenSchema } from "../validators/detalleOrdenValidarDTO.js";
 
-
-
-// Crear detalle de orden con archivo
-export const crearDetalleOrden = [
-  upload.single("archivo"), 
-  async (req, res) => {
-    try {
-      const { orden_id, producto_id, categoria_id, cantidad, precio_unitario, personalizacion } = req.body;
-
-      const archivo = req.file ? `uploads/${req.file.filename}` : null;  // La ruta al archivo
-
-      // Verificar que el producto exista
-      const producto = await productoSchema.findById(producto_id);
-      if (!producto) {
-        return res.status(404).json({ message: "Producto no encontrado" });
+    export const crearDetalleOrden = async (req, res) => {
+      try {
+        const { numero_producto, cantidad, precio_unitario, personalizacion, archivo } = req.body;
+    
+        // Verificar que el número de producto y la orden existen
+        const producto = await productoSchema.findOne({ numero_producto });
+        if (!producto) {
+          return res.status(404).json({ message: "Producto no encontrado" });
+        }
+    
+        // Generar el número de orden automáticamente
+        const ultimaOrden = await ordenSchema.findOne().sort({ numero_orden: -1 });
+        const numero_orden = ultimaOrden ? ultimaOrden.numero_orden + 1 : 1;
+    
+        // Crear el detalle de la orden
+        const detalleOrden = new detalleOrdenSchema({
+          numero_orden,  // Este valor se genera automáticamente
+          numero_producto,
+          cantidad,
+          precio_unitario,
+          personalizacion,
+          archivo
+        });
+    
+        const detalleOrdenCreado = await detalleOrden.save();
+        res.status(201).json(detalleOrdenCreado);
+    
+      } catch (error) {
+        res.status(500).json({ message: error.message });
       }
-
-      const detalleOrden = new detalleOrdenSchema({
-        orden_id,
-        producto_id,
-        categoria_id,
-        cantidad,
-        precio_unitario,
-        personalizacion,
-        archivo: req.file ? req.file.path : null, // Ruta del archivo
-      });
-
-      const detalleOrdenCreado = await detalleOrden.save();
-      res.status(201).json(detalleOrdenCreado);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  },
-];
-
+    };
+    
 
 // Obtener todos los detalles de órdenes
 export const obtenerDetallesOrden = async (req, res) => {
@@ -55,68 +50,91 @@ export const obtenerDetallesOrden = async (req, res) => {
   }
 };
 
-// Obtener un detalle de orden por ID
-export const obtenerDetalleOrdenPorId = async (req, res) => {
-  const { id } = req.params;
+// Obtener detalle de orden por número de orden
+export const obtenerDetalleOrdenPorNumeroOrden = async (req, res) => {
+  const { numero_orden } = req.params;
   try {
-    const detalleOrden = await detalleOrdenSchema.findById(id);
-    if (!detalleOrden) {
-      return res.status(404).json({ message: "Detalle de orden no encontrado" });
+    const detalles = await detalleOrdenSchema.find({ numero_orden });
+    if (!detalles.length) {
+      return res
+        .status(404)
+        .json({ message: "No se encontraron detalles para este número de orden" });
     }
-    res.json(detalleOrden);
+    res.json(detalles);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Consultar un detalle de orden por ID 
+// Consultar un detalle de orden por ID
 export const consultarDetalleOrden = [
   validatorHandler(getDetalleOrdenParamsSchema, "params"),
-  async (req, resp) => {
+  async (req, res) => {
     const { id } = req.params;
     try {
       const detalleOrden = await detalleOrdenSchema.findById(id);
       if (!detalleOrden) {
-        return resp.status(404).json({
+        return res.status(404).json({
           message: "Detalle de orden no encontrado",
         });
       }
-      resp.json(detalleOrden);
+      res.json(detalleOrden);
     } catch (error) {
-      resp.status(500).json({
+      res.status(500).json({
         message: error.message,
       });
     }
   },
 ];
 
-// Actualizar detalle de orden
+// Actualizar un detalle de orden
 export const actualizarDetalleOrden = [
   validatorHandler(getDetalleOrdenParamsSchema, "params"),
   validatorHandler(updateDetalleOrdenSchema, "body"),
-  async (req, resp) => {
+  async (req, res) => {
     const { id } = req.params;
-    const { orden_id, producto_id, categoria_id, cantidad, precio_unitario, personalizacion, archivo} = req.body;
+    const {
+      numero_orden,
+      producto_nombre,
+      categoria_nombre,
+      cantidad,
+      precio_unitario,
+      personalizacion,
+    } = req.body;
 
     try {
-      // Verificar que el producto exista antes de actualizar
-      const producto = await productoSchema.findById(producto_id);
-      if (!producto) {
-        return resp.status(404).json({ message: "Producto no encontrado" });
+      // Verificar que el número de orden exista
+      const orden = await ordenSchema.findOne({ numero_orden });
+      if (!orden) {
+        return res.status(404).json({ message: "Número de orden no encontrado" });
       }
 
-      const actualizarDetalle = await detalleOrdenSchema.updateOne(
-        { _id: id },
-        { $set: { orden_id, producto_id, categoria_id, cantidad, precio_unitario, personalizacion, archivo} }
+      // Verificar que el producto exista por su nombre
+      const producto = await productoSchema.findOne({ nombre: producto_nombre });
+      if (!producto) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+
+      const actualizarDetalle = await detalleOrdenSchema.findByIdAndUpdate(
+        id,
+        {
+          numero_orden,
+          producto_nombre,
+          categoria_nombre,
+          cantidad,
+          precio_unitario,
+          personalizacion,
+        },
+        { new: true }
       );
 
-      if (actualizarDetalle.matchedCount === 0) {
-        return resp.status(404).json({ message: "Detalle de orden no encontrado" });
+      if (!actualizarDetalle) {
+        return res.status(404).json({ message: "Detalle de orden no encontrado" });
       }
 
-      resp.status(200).json({ message: "Detalle de orden actualizado correctamente" });
+      res.status(200).json(actualizarDetalle);
     } catch (error) {
-      resp.status(500).json({ message: error.message });
+      res.status(500).json({ message: error.message });
     }
   },
 ];
@@ -124,16 +142,16 @@ export const actualizarDetalleOrden = [
 // Borrar detalle de orden
 export const borrarDetalleOrden = [
   validatorHandler(deleteDetalleOrdenSchema, "params"),
-  async (req, resp) => {
+  async (req, res) => {
     const { id } = req.params;
     try {
-      const result = await detalleOrdenSchema.deleteOne({ _id: id });
-      if (result.deletedCount === 0) {
-        return resp.status(404).json({ message: "Detalle de orden no encontrado" });
+      const result = await detalleOrdenSchema.findByIdAndDelete(id);
+      if (!result) {
+        return res.status(404).json({ message: "Detalle de orden no encontrado" });
       }
-      resp.status(200).json({ message: "Detalle de orden eliminado correctamente" });
+      res.status(200).json({ message: "Detalle de orden eliminado correctamente" });
     } catch (error) {
-      resp.status(500).json({ message: error.message });
+      res.status(500).json({ message: error.message });
     }
   },
 ];

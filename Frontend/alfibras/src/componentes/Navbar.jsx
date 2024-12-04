@@ -1,68 +1,136 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import logo from "../assets/logo.jpeg"; // Ajusta la ruta según donde esté el logo
+import { Link, useNavigate } from "react-router-dom";
+import logo from "../assets/logo.jpeg";
 
 function Navbar() {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+
+  let isAuthenticated = false;
+  let isAdmin = false;
+
+  if (token) {
+    try {
+      const decoded = JSON.parse(atob(token.split(".")[1])); // Decodificamos el token JWT
+      isAuthenticated = !!decoded; // Si el token es válido, lo consideramos autenticado
+      isAdmin = decoded.role === "admin"; // Verificamos si el usuario es administrador
+    } catch (error) {
+      console.error("Error al decodificar el token:", error);
+      localStorage.removeItem("token"); // Eliminamos el token si es inválido
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // Eliminamos el token del localStorage
+    navigate("/iniciar-sesion"); // Redirigimos al formulario de inicio de sesión
+  };
+
+  const handleNavigation = (route) => {
+    if (!isAuthenticated) {
+      // Si no está autenticado, redirige al inicio de sesión
+      navigate("/iniciar-sesion");
+    } else {
+      navigate(route); // Si está autenticado, navega a la ruta
+    }
+  };
+
   return (
-    <nav className="navbar navbar-expand-lg navbar-light" style={{ backgroundColor: '#2C3E50', fontFamily: 'Optima, sans-serif' }}>
-      <div className="container-fluid">
+    <nav
+      className="navbar navbar-expand-lg navbar-light"
+      style={{
+        backgroundColor: "#2C3E50",
+        fontFamily: "Optima, sans-serif",
+        width: "100%",
+        position: "fixed",
+        top: "0",
+        left: "0",
+        zIndex: "1000",
+      }}
+    >
+      <div className="container-fluid" style={{ padding: 0, maxWidth: "100%" }}>
         {/* Logo de Alfibras */}
-        <Link className="navbar-brand" to="/">
+        <Link className="navbar-brand" to="/" style={{ paddingLeft: "10px" }}>
           <img
             src={logo}
             alt="Logo Alfibras"
-            style={{ height: "60px", width: "auto", marginLeft: "10px" }}
+            style={{
+              height: "60px",
+              width: "auto",
+              marginLeft: "10px",
+              maxWidth: "100%",
+            }}
           />
         </Link>
-        
-        {/* Barra de navegación con enlaces centrados */}
-        <div className="collapse navbar-collapse justify-content-center">
-          <ul className="navbar-nav">
+
+        {/* Navegación */}
+        <div className="collapse navbar-collapse justify-content-center" style={{ width: "100%" }}>
+          <ul className="navbar-nav" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
             <li className="nav-item">
-              <Link className="nav-link" to="/productos" style={{ color: 'white' }}>
+              <a
+                className="nav-link"
+                style={{ color: "white", cursor: "pointer" }}
+                onClick={() => handleNavigation("/productos")}
+              >
                 Productos
-              </Link>
+              </a>
+            </li>
+            {isAdmin && (
+              <li className="nav-item">
+                <a
+                  className="nav-link"
+                  style={{ color: "white", cursor: "pointer" }}
+                  onClick={() => handleNavigation("/categoria")}
+                >
+                  Categoría
+                </a>
+              </li>
+            )}
+            <li className="nav-item">
+              <a
+                className="nav-link"
+                style={{ color: "white", cursor: "pointer" }}
+                onClick={() => handleNavigation("/ordenes")}
+              >
+                Órdenes
+              </a>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/nosotros" style={{ color: 'white' }}>
-                ¿Quiénes somos?
-              </Link>
+              <a
+                className="nav-link"
+                style={{ color: "white", cursor: "pointer" }}
+                onClick={() => handleNavigation("/factura")}
+              >
+                Facturas
+              </a>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/donde-encontrarnos" style={{ color: 'white' }}>
-                ¿Dónde encontrarnos?
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/contacto" style={{ color: 'white' }}>
-                Contáctenos
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/CRUD" style={{ color: 'white' }}>
-                CRUD
-              </Link>
+              <a
+                className="nav-link"
+                style={{ color: "white", cursor: "pointer" }}
+                onClick={() => handleNavigation("/detalleorden")}
+              >
+                Detalles de Órdenes
+              </a>
             </li>
           </ul>
         </div>
 
-        {/* Icono del carrito como botón de navegación */}
-        <div className="navbar-nav me-auto">
-          <Link to="/carrito" className="nav-link">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" className="bi bi-cart3" viewBox="0 0 16 16">
-              <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .49.598l-1 5a.5.5 0 0 1-.465.401l-9.397.472L4.415 11H13a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M3.102 4l.84 4.479 9.144-.459L13.89 4zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4m-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
-            </svg>
-          </Link>
-        </div>
-
-        {/* Botones de inicio de sesión y registro */}
+        {/* Botones de sesión */}
         <div className="d-flex">
-          <Link className="btn btn-outline-light me-2" to="/Iniciar-Sesion">
-            Iniciar sesión
-          </Link>
-          <Link className="btn btn-outline-light" to="/Registrarse">
-            Registrarse
-          </Link>
+          {isAuthenticated ? (
+            <button className="btn btn-outline-light" onClick={handleLogout}>
+              Cerrar sesión
+            </button>
+          ) : (
+            <>
+              <Link className="btn btn-outline-light me-2" to="/iniciar-sesion">
+                Iniciar sesión
+              </Link>
+              <Link className="btn btn-outline-light" to="/registrarse">
+                Registrarse
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>
@@ -70,4 +138,3 @@ function Navbar() {
 }
 
 export default Navbar;
-

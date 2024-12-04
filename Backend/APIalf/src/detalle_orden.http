@@ -1,34 +1,33 @@
+### 
 POST http://localhost:9001/api/detalle_ordenes HTTP/1.1
-content-Type: application/json
+Content-Type: application/json
 
 {
-    "orden_id": "673f83d16463d796b8b56f29",
-    "producto_id": "673f84e8b13b397658fe00e8",
-    "categoria_id": "673d2b0d440d656c67672021",
-    "cantidad": 2,
-    "precio_unitario": 150.000,
-    "personalizacion": "Matera cuadrada azul 30x30",
-    "archivo": "uploads/1677829338472.jpg"
+  "numero_producto": 1,
+  "cantidad": 3,
+  "precio_unitario": 400000,
+  "personalizacion": "Puerta de 50x45 azul rey.",
+  "archivo": "uploads/1677829338473.jpg"
 }
-###
+
+### 
 GET http://localhost:9001/api/detalle_ordenes HTTP/1.1
 
+### 
+GET http://localhost:9001/api/detalle_ordenes/2 HTTP/1.1
 
-###
-GET http://localhost:9001/api/detalle_ordenes/673f9098776a53dbe6bcb17f HTTP/1.1
-
-###
+### 
 PUT http://localhost:9001/api/detalle_ordenes/673f9098776a53dbe6bcb17f HTTP/1.1
 Content-Type: application/json
 
 {
-    "orden_id": "673f83d16463d796b8b56f29",
-    "producto_id": "673f84e8b13b397658fe00e8",
-    "categoria_id": "673d2b0d440d656c67672021",
-    "cantidad": 3,
-    "precio_unitario": 300.000,
-    "personalizacion": "Puerta corrediza para trafic "
+  "numero_orden": "4",
+  "numero_producto": 202,
+  "cantidad": 2,
+  "precio_unitario": 350000,
+  "personalizacion": "Silla pequeña y grande, azul y roja.",
+  "archivo": "uploads/updated-file.jpg"
 }
 
-###
+### 
 DELETE http://localhost:9001/api/detalle_ordenes/67352e2ee4f4071fc562a188 HTTP/1.1

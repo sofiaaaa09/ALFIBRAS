@@ -5,14 +5,28 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "API de alfibras ",
+      title: "API de Alfibras",
       version: "1.0.0",
-      description: "Documentación de la API  alf :)",
+      description: "Documentación de la API Alfibras :)",
     },
     servers: [
       {
         url: "http://localhost:9001",
-        description: "Api alf",
+        description: "Servidor local de desarrollo",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT", 
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [], 
       },
     ],
   },
@@ -28,6 +42,6 @@ const setupSwaggerDocs = (app, port) => {
     res.send(swaggerSpec);
   });
   console.log(`Documentación de Swagger disponible en http://localhost:${port}/api-docs`);
-}
+};
 
 export default setupSwaggerDocs;

@@ -1,0 +1,8 @@
+###
+POST http://localhost:9001/api/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "juan_perez@gmail.com",
+  "password": "contraseñaSegura123"
+}

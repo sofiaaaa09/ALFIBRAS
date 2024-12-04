@@ -164,7 +164,7 @@ export default function CategoriaForm() {
         </div>
       </div>
 
-      {/* Lista de categorías debajo del formulario */}
+      
       <div style={styles.card}>
         <div style={styles.cardHeader}>Lista de Categorías</div>
         <div style={styles.cardBody}>

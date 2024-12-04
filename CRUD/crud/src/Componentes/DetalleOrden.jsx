@@ -1,184 +1,242 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-export default function DetalleOrdenForm() {
-  const [ordenId, setOrdenId] = useState("");
-  const [productoId, setProductoId] = useState("");
-  const [categoriaId, setCategoriaId] = useState("");
-  const [cantidad, setCantidad] = useState(1);
+export default function OrdenForm() {
+  const [numeroOrden, setNumeroOrden] = useState("");
+  const [productoId, setProductoId] = useState(""); // Producto seleccionado
+  const [productoNumero, setProductoNumero] = useState(""); // Mostrar el número del producto
+  const [cantidad, setCantidad] = useState(0);
   const [precioUnitario, setPrecioUnitario] = useState(0);
   const [personalizacion, setPersonalizacion] = useState("");
   const [archivo, setArchivo] = useState(null);
   const [error, setError] = useState("");
+  const [productos, setProductos] = useState([]); // Estado para almacenar los productos
+  const [categorias, setCategorias] = useState([]); // Estado para almacenar las categorías
+  const [detallesOrden, setDetallesOrden] = useState([]); // Estado para almacenar los detalles de la orden
 
-  const agregarDetalleOrden = async (event) => {
+  useEffect(() => {
+    // Cargar las categorías al montar el componente
+    const fetchCategorias = async () => {
+      try {
+        const response = await axios.get("http://localhost:9001/api/categorias");
+        setCategorias(response.data);
+      } catch (err) {
+        console.error("Error al cargar las categorías:", err);
+      }
+    };
+
+    // Cargar los productos al montar el componente
+    const fetchProductos = async () => {
+      try {
+        const response = await axios.get("http://localhost:9001/api/productos");
+        setProductos(response.data);
+      } catch (err) {
+        console.error("Error al cargar los productos:", err);
+      }
+    };
+
+    // Cargar las órdenes al montar el componente
+    const fetchDetallesOrden = async () => {
+      try {
+        const response = await axios.get("http://localhost:9001/api/detalle_ordenes");
+        setDetallesOrden(response.data);
+      } catch (err) {
+        console.error("Error al cargar los detalles de las órdenes:", err);
+      }
+    };
+
+    fetchCategorias();
+    fetchProductos();
+    fetchDetallesOrden();
+  }, []);
+
+  const manejarEnvioFormulario = async (event) => {
     event.preventDefault();
 
+    // Validar que los campos necesarios estén completos
+    if (!numeroOrden || !productoId || !cantidad || !precioUnitario) {
+      setError("Por favor, complete todos los campos correctamente.");
+      return;
+    }
+
     const formData = new FormData();
-    formData.append("orden_id", ordenId);
-    formData.append("producto_id", productoId);
-    formData.append("categoria_id", categoriaId);
+    formData.append("archivo", archivo);
+    formData.append("numero_orden", numeroOrden);
+    formData.append("producto_id", productoId); // Enviar productoId
     formData.append("cantidad", cantidad);
     formData.append("precio_unitario", precioUnitario);
     formData.append("personalizacion", personalizacion);
-    if (archivo) {
-      formData.append("archivo", archivo);
-    }
 
     try {
-      await axios.post("http://localhost:9001/api/detalle_ordenes", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const response = await axios.post("http://localhost:9001/api/detalle_ordenes", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
+
+      // Actualizar la lista de detalles con el nuevo registro
+      setDetallesOrden([...detallesOrden, response.data]);
+      limpiarFormulario();
       alert("Detalle de la orden registrado exitosamente.");
-      setOrdenId("");
-      setProductoId("");
-      setCategoriaId("");
-      setCantidad(1);
-      setPrecioUnitario(0);
-      setPersonalizacion("");
-      setArchivo(null);
     } catch (err) {
-      if (err.response && err.response.data) {
-        setError(err.response.data.message);
-      } else {
-        setError("Ocurrió un error inesperado.");
-      }
+      console.error("Error al enviar datos:", err.response?.data || err.message);
+      setError(err.response?.data?.message || "Error al registrar el detalle de la orden.");
     }
+  };
+
+  const limpiarFormulario = () => {
+    setNumeroOrden("");
+    setProductoId(""); // Limpiar el campo de productoId
+    setProductoNumero(""); // Limpiar el número del producto
+    setCantidad(0);
+    setPrecioUnitario(0);
+    setPersonalizacion("");
+    setArchivo(null);
+    setError("");
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <div style={styles.header}>Registrar Detalle de Orden</div>
-        <div style={styles.body}>
-          <form onSubmit={agregarDetalleOrden} style={styles.form}>
+        <h2 style={styles.header}>Registrar Detalle de Orden</h2>
+        <form onSubmit={manejarEnvioFormulario} style={styles.form}>
+          {/* Campo Número de Orden */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Número de Orden:</label>
+            <input
+              type="text"
+              value={numeroOrden}
+              onChange={(e) => setNumeroOrden(e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
+
+          {/* Campo Producto con número del producto visible */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Producto:</label>
+            <select
+              value={productoId}
+              onChange={(e) => {
+                const selectedProduct = productos.find((producto) => producto._id === e.target.value);
+                setProductoId(e.target.value);
+                setProductoNumero(selectedProduct ? selectedProduct.numero_producto : "");
+              }}
+              required
+              style={styles.input}
+            >
+              <option value="">Seleccione un producto</option>
+              {productos.map((producto) => (
+                <option key={producto._id} value={producto._id}>
+                  {producto.nombre_producto} (Número: {producto.numero_producto})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Mostrar el número del producto seleccionado */}
+          {productoNumero && (
             <div style={styles.formGroup}>
-              <label htmlFor="txtOrdenId" style={styles.label}>
-                Orden ID
-              </label>
-              <input
-                type="text"
-                id="txtOrdenId"
-                style={styles.input}
-                placeholder="ID de la orden"
-                onChange={(e) => setOrdenId(e.target.value)}
-                value={ordenId}
-              />
+              <label style={styles.label}>Número del Producto Seleccionado:</label>
+              <p>{productoNumero}</p>
             </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="txtProductoId" style={styles.label}>
-                Producto ID
-              </label>
-              <input
-                type="text"
-                id="txtProductoId"
-                style={styles.input}
-                placeholder="ID del producto"
-                onChange={(e) => setProductoId(e.target.value)}
-                value={productoId}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="txtCategoriaId" style={styles.label}>
-                Categoría ID
-              </label>
-              <input
-                type="text"
-                id="txtCategoriaId"
-                style={styles.input}
-                placeholder="ID de la categoría"
-                onChange={(e) => setCategoriaId(e.target.value)}
-                value={categoriaId}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="txtCantidad" style={styles.label}>
-                Cantidad
-              </label>
-              <input
-                type="number"
-                id="txtCantidad"
-                style={styles.input}
-                placeholder="Cantidad"
-                onChange={(e) => setCantidad(e.target.value)}
-                value={cantidad}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="txtPrecioUnitario" style={styles.label}>
-                Precio Unitario
-              </label>
-              <input
-                type="number"
-                id="txtPrecioUnitario"
-                style={styles.input}
-                placeholder="Precio unitario"
-                onChange={(e) => setPrecioUnitario(e.target.value)}
-                value={precioUnitario}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="txtPersonalizacion" style={styles.label}>
-                Personalización
-              </label>
-              <textarea
-                id="txtPersonalizacion"
-                style={styles.textarea}
-                placeholder="Detalles de personalización"
-                rows="3"
-                onChange={(e) => setPersonalizacion(e.target.value)}
-                value={personalizacion}
-              ></textarea>
-            </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="filePersonalizacion" style={styles.label}>
-                Subir Imagen
-              </label>
-              <input
-                type="file"
-                id="filePersonalizacion"
-                style={styles.input}
-                onChange={(e) => setArchivo(e.target.files[0])}
-              />
-            </div>
-            {error && <div style={styles.error}>{error}</div>}
-            <button type="submit" style={styles.button}>
-              Guardar Detalle
-            </button>
-          </form>
-        </div>
+          )}
+
+          {/* Campo Cantidad */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Cantidad:</label>
+            <input
+              type="number"
+              value={cantidad}
+              onChange={(e) => setCantidad(e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
+
+          {/* Campo Precio Unitario */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Precio Unitario:</label>
+            <input
+              type="number"
+              value={precioUnitario}
+              onChange={(e) => setPrecioUnitario(e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
+
+          {/* Campo Personalización */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Personalización:</label>
+            <input
+              type="text"
+              value={personalizacion}
+              onChange={(e) => setPersonalizacion(e.target.value)}
+              style={styles.input}
+            />
+          </div>
+
+          {/* Campo Subir Archivo */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Subir Archivo:</label>
+            <input
+              type="file"
+              onChange={(e) => setArchivo(e.target.files[0])}
+              style={styles.input}
+            />
+          </div>
+
+          {/* Mostrar errores */}
+          {error && <div style={styles.error}>{error}</div>}
+
+          {/* Botón para enviar el formulario */}
+          <button type="submit" style={styles.button}>
+            Registrar Detalle
+          </button>
+        </form>
+      </div>
+
+      {/* Lista de detalles de órdenes */}
+      <div style={styles.listContainer}>
+        <h3 style={styles.listHeader}>Detalles Registrados</h3>
+        <ul style={styles.list}>
+          {detallesOrden.map((detalle) => (
+            <li key={detalle._id} style={styles.listItem}>
+              <strong>Orden {detalle.numero_orden}:</strong> {detalle.producto_nombre} -{" "}
+              {detalle.categoria_nombre} - Cantidad: {detalle.cantidad} - Precio:{" "}
+              {detalle.precio_unitario} - Personalización: {detalle.personalizacion}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
 }
 
-// Estilos actualizados
 const styles = {
   container: {
     display: "flex",
-    justifyContent: "center",
+    flexDirection: "column",
     alignItems: "center",
-    minHeight: "100vh", 
+    minHeight: "100vh",
     backgroundColor: "#f4f6f8",
-    overflowY: "auto", 
+    padding: "20px",
   },
   card: {
     width: "600px",
-    maxWidth: "90%", 
-    borderRadius: "8px",
+    maxWidth: "90%",
     backgroundColor: "#fff",
+    borderRadius: "8px",
     boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
-    overflow: "hidden",
+    padding: "20px",
+    marginBottom: "20px",
   },
   header: {
-    backgroundColor: "#2C3E50",
-    color: "#fff",
-    textAlign: "center",
     fontSize: "1.5rem",
-    padding: "15px",
-  },
-  body: {
-    padding: "30px",
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: "20px",
   },
   form: {
     display: "flex",
@@ -190,34 +248,48 @@ const styles = {
     flexDirection: "column",
   },
   label: {
-    marginBottom: "5px",
+    fontSize: "1rem",
     fontWeight: "bold",
-    color: "#333",
+    marginBottom: "5px",
   },
   input: {
     padding: "10px",
     border: "1px solid #ccc",
     borderRadius: "4px",
-    fontSize: "1rem",
-  },
-  textarea: {
-    padding: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    fontSize: "1rem",
   },
   button: {
     padding: "10px",
-    backgroundColor: "#2C3E50",
+    backgroundColor: "#007bff",
     color: "#fff",
     border: "none",
     borderRadius: "4px",
-    fontSize: "1rem",
     cursor: "pointer",
   },
   error: {
     color: "red",
-    textAlign: "center",
+    fontSize: "1rem",
+    marginTop: "10px",
+  },
+  listContainer: {
+    width: "600px",
+    maxWidth: "90%",
+    backgroundColor: "#fff",
+    borderRadius: "8px",
+    padding: "20px",
+    marginTop: "20px",
+  },
+  listHeader: {
+    fontSize: "1.2rem",
+    fontWeight: "bold",
+    marginBottom: "10px",
+  },
+  list: {
+    listStyleType: "none",
+    padding: "0",
+  },
+  listItem: {
+    padding: "10px",
+    borderBottom: "1px solid #ddd",
+    fontSize: "1rem",
   },
 };
-
