@@ -45,21 +45,6 @@ function Navbar() {
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/carrito" style={{ color: "white" }}>
-                Carrito
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/clientes" style={{ color: "white" }}>
-                Clientes
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/inventario" style={{ color: "white" }}>
-                Inventario
-              </Link>
-            </li>
-            <li className="nav-item">
               <Link className="nav-link" to="/admin" style={{ color: "white" }}>
                 Admin
               </Link>

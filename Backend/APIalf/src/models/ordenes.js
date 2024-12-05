@@ -1,27 +1,43 @@
 import mongoose from "mongoose";
 
-// Esquema para las órdenes
-const ordenesSchema = mongoose.Schema({
-  cliente_id: {
-    type: mongoose.Schema.Types.ObjectId,  // Relación con el modelo de cliente (supuesto)
-    ref: "clientes",  // Nombre del modelo de clientes, ajusta si es diferente
+const ordenesSchema = new mongoose.Schema({
+  cliente_correo: {
+    type: String,
     required: true,
+    validate: {
+      validator: function (v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      },
+      message: (props) => `${props.value} no es un correo válido.`,
+    },
   },
   fecha: {
     type: Date,
     required: true,
-    default: Date.now,  // Establece la fecha actual por defecto
+    default: Date.now,
   },
   estado: {
     type: String,
-    enum: ["pendiente", "enviado", "entregado"],  // Solo valores válidos
+    enum: ["pendiente", "procesada", "completada", "enviado"],
     required: true,
   },
   total: {
     type: Number,
     required: true,
-    min: 0,  // El total no puede ser negativo
+    min: 0,
   },
+  numero_orden: {
+    type: Number,
+    required: true,
+    unique: true,
+  },
+  detalles: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DetalleOrden", // Relación con DetalleOrden
+    },
+  ],
 });
 
-export default mongoose.model("ordenes", ordenesSchema);
+export default mongoose.model("Orden", ordenesSchema);
+

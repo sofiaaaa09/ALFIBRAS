@@ -45,7 +45,9 @@ const routes = express.Router();
  * /api/inventarios:
  *   post:
  *     summary: Crea un nuevo inventario
- *     tags: [inventarios]
+ *     tags: [Inventarios]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -56,14 +58,16 @@ const routes = express.Router();
  *       200:
  *         description: Inventario creado exitosamente
  */
-routes.post("/inventarios", crearInventario);
+routes.post("/", crearInventario);
 
 /**
  * @swagger
  * /api/inventarios:
  *   get:
  *     summary: Obtiene todos los inventarios
- *     tags: [inventarios]
+ *     tags: [Inventarios]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de inventarios
@@ -74,14 +78,16 @@ routes.post("/inventarios", crearInventario);
  *               items:
  *                 $ref: '#/components/schemas/Inventario'
  */
-routes.get("/inventarios", obtenerInventarios);
+routes.get("/", obtenerInventarios);
 
 /**
  * @swagger
  * /api/inventarios/{id}:
  *   get:
  *     summary: Obtiene un inventario por ID
- *     tags: [inventarios]
+ *     tags: [Inventarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -97,14 +103,16 @@ routes.get("/inventarios", obtenerInventarios);
  *             schema:
  *               $ref: '#/components/schemas/Inventario'
  */
-routes.get("/inventarios/:id", obtenerInventarioPorId);
+routes.get("/:id", obtenerInventarioPorId);
 
 /**
  * @swagger
  * /api/inventarios/{id}:
  *   put:
  *     summary: Actualiza un inventario por ID
- *     tags: [inventarios]
+ *     tags: [Inventarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -122,14 +130,16 @@ routes.get("/inventarios/:id", obtenerInventarioPorId);
  *       200:
  *         description: Inventario actualizado exitosamente
  */
-routes.put("/inventarios/:id", actualizarInventario);
+routes.put("/:id", actualizarInventario);
 
 /**
  * @swagger
  * /api/inventarios/{id}:
  *   delete:
  *     summary: Elimina un inventario por ID
- *     tags: [inventarios]
+ *     tags: [Inventarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -143,6 +153,6 @@ routes.put("/inventarios/:id", actualizarInventario);
  *       404:
  *         description: Inventario no encontrado
  */
-routes.delete("/inventarios/:id", borrarInventario);
+routes.delete("/:id", borrarInventario);
 
 export default routes;

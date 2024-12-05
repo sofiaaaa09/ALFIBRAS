@@ -1,4 +1,5 @@
 import express from "express";
+import { validationResult } from 'express-validator';
 import {
   actualizarCliente,
   borrarCliente,
@@ -12,7 +13,7 @@ const routes = express.Router();
 
 /**
  * @swagger
-* components:
+ * components:
  *   schemas:
  *     Cliente:
  *       type: object
@@ -57,7 +58,7 @@ const routes = express.Router();
  *       200:
  *         description: Cliente creado exitosamente
  */
-routes.post("/clientes", crearCliente);
+routes.post("/", crearCliente);
 
 /**
  * @swagger
@@ -75,7 +76,7 @@ routes.post("/clientes", crearCliente);
  *               items:
  *                 $ref: '#/components/schemas/Cliente'
  */
-routes.get("/clientes", obtenerClientes);
+routes.get("/", obtenerClientes);
 
 /**
  * @swagger
@@ -98,7 +99,7 @@ routes.get("/clientes", obtenerClientes);
  *             schema:
  *               $ref: '#/components/schemas/Cliente'
  */
-routes.get("/clientes/:id", obtenerClientePorId);
+routes.get("/:id", obtenerClientePorId);
 
 /**
  * @swagger
@@ -123,7 +124,7 @@ routes.get("/clientes/:id", obtenerClientePorId);
  *       200:
  *         description: Cliente actualizado
  */
-routes.put("/clientes/:id", actualizarCliente);
+routes.put("/:id", actualizarCliente);
 
 /**
  * @swagger
@@ -144,6 +145,6 @@ routes.put("/clientes/:id", actualizarCliente);
  *       404:
  *         description: Cliente no encontrado
  */
-routes.delete("/clientes/:id", borrarCliente);
+routes.delete("/:id", borrarCliente);
 
 export default routes;

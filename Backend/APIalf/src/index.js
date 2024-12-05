@@ -3,7 +3,7 @@ import clientesRoutes from "./routes/clientes.js";
 import adminsRoutes from "./routes/admins.js"; 
 import categoriasRoutes from "./routes/categorias.js";
 import carritoRoutes from "./routes/carritos.js";
-import detalleOrdenes from "./routes/detalle_ordenes.js";
+import detalleOrdenRoutes from "./routes/detalle_ordenes.js";
 import envioRoutes from "./routes/envios.js";
 import facturaRoutes from "./routes/facturas.js";
 import inventarioRoutes from "./routes/inventarios.js";
@@ -14,40 +14,40 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import conectarDB from "./config/conexion.js";
 
-// Definir el puerto
 const port = process.env.PORT || 9001;
 
 const app = express();
 
-
+// Middleware de CORS
 app.use(cors({
   origin: "*", 
   methods: "GET,POST,PUT,DELETE", 
   allowedHeaders: "Content-Type, Authorization", 
 }));
 
-// Habilitar body-parser para analizar JSON
+// Middleware de body parser
 app.use(bodyParser.json());
 app.use(express.json());
 
-// Usar las rutas
-app.use("/api", clientesRoutes);  
-app.use("/api", adminsRoutes);    
-app.use("/api", categoriasRoutes);
-app.use("/api", carritoRoutes);
-app.use("/api", detalleOrdenes);
-app.use("/api", envioRoutes);
-app.use("/api", facturaRoutes);
-app.use("/api", inventarioRoutes);
-app.use("/api", ordenRoutes);
-app.use("/api", productoRoutes);
+// Rutas de la API
+app.use("/api/clientes", clientesRoutes);  
+app.use("/api/admins", adminsRoutes);    
+app.use("/api/categorias", categoriasRoutes);
+app.use("/api/carritos", carritoRoutes);
+app.use("/api/detalle_ordenes", detalleOrdenRoutes);
+app.use("/api/envios", envioRoutes);
+app.use("/api/facturas", facturaRoutes);
+app.use("/api/inventarios", inventarioRoutes);
+app.use("/api/ordenes", ordenRoutes);
+app.use("/api/productos", productoRoutes);
 
-// Usar body-parser para formularios URL encoded
+// Middleware para URL-encoded
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Conectar a la base de datos
 conectarDB();
 
+// Configuración de Swagger
 const clientOptions = {
   serverApi: {
     version: "1",
@@ -56,7 +56,7 @@ const clientOptions = {
   },
 };
 
-// Ruta de bienvenida
+// Ruta principal
 app.get("/", (req, res) => {
   res.send("<h1>Bienvenido a la API </h1>");
 });
@@ -65,5 +65,5 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`Servidor escuchando en el puerto ${port}`);
   // Configurar Swagger Docs en la ruta /api-docs
-  swaggerJSDOCs(app, 9001);
+  swaggerJSDOCs(app, port);
 });
