@@ -58,7 +58,7 @@ const clientOptions = {
 
 // Ruta de bienvenida
 app.get("/", (req, res) => {
-  res.send("<h1>Bienvenido a la API de SGIR</h1>");
+  res.send("<h1>Bienvenido a la API </h1>");
 });
 
 // Iniciar el servidor
