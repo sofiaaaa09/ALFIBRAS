@@ -1,22 +1,24 @@
-import Cliente from '../models/clientes.js';
-import Orden from '../models/ordenes.js';
-import { validatorHandler } from '../midleware/validator.handler.js';  
+import { validatorHandler } from "../midleware/validator.handler.js";
+import Cliente from "../models/clientes.js";
 
 import {
   createClienteSchema,
+  deleteClienteSchema,
   getClienteParamsSchema,
   updateClienteSchema,
-  deleteClienteSchema,
 } from "../validators/clienteValidarDTO.js";
 
-// Crear cliente con orden inicial
+
 export const crearCliente = [
   validatorHandler(createClienteSchema, "body"),
   async (req, res) => {
-    const clienteData = req.body;
+    const clienteData = { 
+      ...req.body, 
+      rol: "Usuario",
+      password: req.body.password,
+    };
 
     try {
-      // Crear el cliente
       const cliente = new Cliente(clienteData);
       const clienteCreado = await cliente.save();
       res.status(201).json({ cliente: clienteCreado });
@@ -26,17 +28,19 @@ export const crearCliente = [
   },
 ];
 
-// Obtener todos los clientes
+
 export const obtenerClientes = async (req, res) => {
-  try {
-    const clientes = await Cliente.find(); 
-    res.json(clientes); 
+  
+  try {console.log("controlador obtener cliente");
+    const clientes = await Cliente.find();
+    console.log("logica buscar");
+    res.json(clientes);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Obtener un cliente por ID con órdenes asociadas
+
 export const obtenerClientePorId = async (req, res) => {
   const { id } = req.params;
   try {
@@ -50,13 +54,13 @@ export const obtenerClientePorId = async (req, res) => {
   }
 };
 
-// Actualizar cliente con nuevas órdenes si es necesario
+
 export const actualizarCliente = [
   validatorHandler(getClienteParamsSchema, "params"),
   validatorHandler(updateClienteSchema, "body"),
   async (req, res) => {
     const { id } = req.params;
-    const { nombre, edad, email, telefono, direccion, ordenes } = req.body;
+    const { nombre, email, telefono, direccion, password } = req.body;
 
     try {
       const cliente = await Cliente.findById(id);
@@ -64,18 +68,11 @@ export const actualizarCliente = [
         return res.status(404).json({ message: "Cliente no encontrado" });
       }
 
-      // Actualiza los campos del cliente
       cliente.nombre = nombre || cliente.nombre;
-      cliente.edad = edad || cliente.edad;
       cliente.email = email || cliente.email;
       cliente.telefono = telefono || cliente.telefono;
       cliente.direccion = direccion || cliente.direccion;
-
-      // Si se pasa una nueva orden se agrega
-      if (ordenes && Array.isArray(ordenes)) {
-        cliente.ordenes.push(...ordenes);
-      }
-
+      cliente.password = password || cliente.password; 
       await cliente.save();
       res.status(200).json({ message: "Cliente actualizado correctamente" });
     } catch (error) {
@@ -84,7 +81,7 @@ export const actualizarCliente = [
   },
 ];
 
-// Borrar cliente y órdenes asociadas
+
 export const borrarCliente = [
   validatorHandler(deleteClienteSchema, "params"),
   async (req, res) => {
@@ -95,9 +92,8 @@ export const borrarCliente = [
         return res.status(404).json({ message: "Cliente no encontrado" });
       }
 
-      // Eliminar cliente
       await cliente.deleteOne();
-      res.status(200).json({ message: "Cliente  eliminado correctamente" });
+      res.status(200).json({ message: "Cliente eliminado correctamente" });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }

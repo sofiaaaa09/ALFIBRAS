@@ -2,8 +2,8 @@ POST http://localhost:9001/api/categorias HTTP/1.1
 content-Type: application/json
 
 {
-    "nombre_categoria": "Puertas",
-    "descripcion": "Categoría dedicada a productos puertas",
+    "nombre_categoria": "Silleteria",
+    "descripcion": "Categoría dedicada a silleteria",
     "estado": "activo"
 }
 ###

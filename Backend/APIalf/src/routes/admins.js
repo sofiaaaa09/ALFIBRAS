@@ -5,7 +5,8 @@ import {
   obtenerAdminPorId,
   actualizarAdmin,
   borrarAdmin,
-} from "../controllers/controladoradmin.js";  
+  autenticarAdmin,
+} from "../controllers/controladoradmin.js";
 
 const routes = express.Router();
 
@@ -25,14 +26,26 @@ const routes = express.Router();
  *         telefono:
  *           type: string
  *           description: Número de teléfono del administrador
+ *         password:
+ *           type: string
+ *           description: Contraseña del administrador
  *       required:
  *         - nombre
  *         - email
  *         - telefono
+ *         - password
  *       example:
  *         nombre: "Carlos"
  *         email: "carlos@example.com"
  *         telefono: "123456789"
+ *         password: "mi_contraseña_segura"
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Administradores
+ *   description: Gestión de administradores
  */
 
 /**
@@ -40,7 +53,7 @@ const routes = express.Router();
  * /api/admins:
  *   post:
  *     summary: Crea un nuevo administrador
- *     tags: [admins]
+ *     tags: [Administradores]
  *     requestBody:
  *       required: true
  *       content:
@@ -48,17 +61,19 @@ const routes = express.Router();
  *           schema:
  *             $ref: '#/components/schemas/Admin'
  *     responses:
- *       200:
+ *       201:
  *         description: Administrador creado exitosamente
+ *       500:
+ *         description: Error al crear el administrador
  */
-routes.post("/admins", crearAdmin);
+routes.post("/", crearAdmin);
 
 /**
  * @swagger
  * /api/admins:
  *   get:
  *     summary: Obtiene todos los administradores
- *     tags: [admins]
+ *     tags: [Administradores]
  *     responses:
  *       200:
  *         description: Lista de administradores
@@ -68,15 +83,17 @@ routes.post("/admins", crearAdmin);
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Admin'
+ *       500:
+ *         description: Error al obtener los administradores
  */
-routes.get("/admins", obtenerAdmins);
+routes.get("/", obtenerAdmins);
 
 /**
  * @swagger
  * /api/admins/{id}:
  *   get:
  *     summary: Obtiene un administrador por ID
- *     tags: [admins]
+ *     tags: [Administradores]
  *     parameters:
  *       - in: path
  *         name: id
@@ -91,15 +108,19 @@ routes.get("/admins", obtenerAdmins);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Admin'
+ *       404:
+ *         description: Administrador no encontrado
+ *       500:
+ *         description: Error al obtener el administrador
  */
-routes.get("/admins/:id", obtenerAdminPorId);
+routes.get("/:id", obtenerAdminPorId);
 
 /**
  * @swagger
  * /api/admins/{id}:
  *   put:
  *     summary: Actualiza un administrador por ID
- *     tags: [admins]
+ *     tags: [Administradores]
  *     parameters:
  *       - in: path
  *         name: id
@@ -115,16 +136,20 @@ routes.get("/admins/:id", obtenerAdminPorId);
  *             $ref: '#/components/schemas/Admin'
  *     responses:
  *       200:
- *         description: Administrador actualizado
+ *         description: Administrador actualizado correctamente
+ *       404:
+ *         description: Administrador no encontrado
+ *       500:
+ *         description: Error al actualizar el administrador
  */
-routes.put("/admins/:id", actualizarAdmin);
+routes.put("/:id", actualizarAdmin);
 
 /**
  * @swagger
  * /api/admins/{id}:
  *   delete:
  *     summary: Elimina un administrador por ID
- *     tags: [admins]
+ *     tags: [Administradores]
  *     parameters:
  *       - in: path
  *         name: id
@@ -134,10 +159,56 @@ routes.put("/admins/:id", actualizarAdmin);
  *         description: ID del administrador
  *     responses:
  *       200:
- *         description: Administrador eliminado
+ *         description: Administrador eliminado correctamente
  *       404:
  *         description: Administrador no encontrado
+ *       500:
+ *         description: Error al eliminar el administrador
  */
-routes.delete("/admins/:id", borrarAdmin);
+routes.delete("/:id", borrarAdmin);
+
+/**
+ * @swagger
+ * /api/admins/login:
+ *   post:
+ *     summary: Autentica un administrador
+ *     tags: [Administradores]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Correo electrónico del administrador
+ *               password:
+ *                 type: string
+ *                 description: Contraseña del administrador
+ *             required:
+ *               - email
+ *               - password
+ *             example:
+ *               email: "admin@example.com"
+ *               password: "mi_contraseña_segura"
+ *     responses:
+ *       200:
+ *         description: Autenticación exitosa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 admin:
+ *                   $ref: '#/components/schemas/Admin'
+ *       401:
+ *         description: Credenciales inválidas
+ *       500:
+ *         description: Error en el proceso de autenticación
+ */
+routes.post("/login", autenticarAdmin);
 
 export default routes;

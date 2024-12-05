@@ -5,7 +5,7 @@ import {
   obtenerEnvioPorId,
   actualizarEnvio,
   borrarEnvio,
-} from "../controllers/controladorenvio.js"; // Controlador de envíos
+} from "../controllers/controladorenvio.js";
 
 const routes = express.Router();
 
@@ -36,7 +36,7 @@ const routes = express.Router();
  *         - estado
  *       example:
  *         orden_id: "6005"
- *         direccion_envio: " Cl. 72 #10-34, Chapinero, Bogotá"
+ *         direccion_envio: "Cl. 72 #10-34, Chapinero, Bogotá"
  *         fecha_envio: "2024-11-15"
  *         estado: "pendiente"
  */
@@ -46,7 +46,7 @@ const routes = express.Router();
  * /api/envios:
  *   post:
  *     summary: Crea un nuevo envío
- *     tags: [envios]
+ *     tags: [Envíos]
  *     requestBody:
  *       required: true
  *       content:
@@ -57,14 +57,14 @@ const routes = express.Router();
  *       200:
  *         description: Envío creado exitosamente
  */
-routes.post("/envios", crearEnvio);
+routes.post("/", crearEnvio);
 
 /**
  * @swagger
  * /api/envios:
  *   get:
  *     summary: Obtiene todos los envíos
- *     tags: [envios]
+ *     tags: [Envíos]
  *     responses:
  *       200:
  *         description: Lista de envíos
@@ -75,14 +75,14 @@ routes.post("/envios", crearEnvio);
  *               items:
  *                 $ref: '#/components/schemas/Envio'
  */
-routes.get("/envios", obtenerEnvios);
+routes.get("/", obtenerEnvios);
 
 /**
  * @swagger
  * /api/envios/{id}:
  *   get:
  *     summary: Obtiene un envío por ID
- *     tags: [envios]
+ *     tags: [Envíos]
  *     parameters:
  *       - in: path
  *         name: id
@@ -98,14 +98,14 @@ routes.get("/envios", obtenerEnvios);
  *             schema:
  *               $ref: '#/components/schemas/Envio'
  */
-routes.get("/envios/:id", obtenerEnvioPorId);
+routes.get("/:id", obtenerEnvioPorId);
 
 /**
  * @swagger
  * /api/envios/{id}:
  *   put:
  *     summary: Actualiza un envío por ID
- *     tags: [envios]
+ *     tags: [Envíos]
  *     parameters:
  *       - in: path
  *         name: id
@@ -121,16 +121,16 @@ routes.get("/envios/:id", obtenerEnvioPorId);
  *             $ref: '#/components/schemas/Envio'
  *     responses:
  *       200:
- *         description: Envío actualizado
+ *         description: Envío actualizado exitosamente
  */
-routes.put("/envios/:id", actualizarEnvio);
+routes.put("/:id", actualizarEnvio);
 
 /**
  * @swagger
  * /api/envios/{id}:
  *   delete:
  *     summary: Elimina un envío por ID
- *     tags: [envios]
+ *     tags: [Envíos]
  *     parameters:
  *       - in: path
  *         name: id
@@ -140,11 +140,10 @@ routes.put("/envios/:id", actualizarEnvio);
  *         description: ID del envío
  *     responses:
  *       200:
- *         description: Envío eliminado
+ *         description: Envío eliminado exitosamente
  *       404:
  *         description: Envío no encontrado
  */
-routes.delete("/envios/:id", borrarEnvio);
+routes.delete("/:id", borrarEnvio);
 
 export default routes;
-

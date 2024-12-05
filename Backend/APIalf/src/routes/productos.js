@@ -6,6 +6,13 @@ import {
   actualizarProducto,
   borrarProducto,
 } from "../controllers/controladorproducto.js";
+import {
+  createProductoSchema,
+  getProductoParamsSchema,
+  updateProductoSchema,
+  deleteProductoSchema,
+} from "../validators/productoValidarDTO.js";
+import { validatorHandler } from "../midleware/validator.handler.js";
 
 const routes = express.Router();
 
@@ -37,6 +44,9 @@ const routes = express.Router();
  *         stock_max:
  *           type: number
  *           description: Cantidad máxima
+ *         numero_producto:
+ *           type: number
+ *           description: Número único del producto
  *       required:
  *         - nombre
  *         - descripcion
@@ -45,6 +55,7 @@ const routes = express.Router();
  *         - cantidad_inicial
  *         - stock_min
  *         - stock_max
+ *         - numero_producto
  *       example:
  *         nombre: "Puerta corrediza"
  *         descripcion: "Puerta tráfico corrediza"
@@ -53,6 +64,7 @@ const routes = express.Router();
  *         cantidad_inicial: 12
  *         stock_min: 10
  *         stock_max: 100
+ *         numero_producto: 101
  */
 
 /**
@@ -60,7 +72,9 @@ const routes = express.Router();
  * /api/productos:
  *   post:
  *     summary: Crea un nuevo producto
- *     tags: [productos]
+ *     tags: [Productos]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -68,17 +82,23 @@ const routes = express.Router();
  *           schema:
  *             $ref: '#/components/schemas/Producto'
  *     responses:
- *       200:
+ *       201:
  *         description: Producto creado exitosamente
  */
-routes.post("/productos", crearProducto);
+routes.post(
+  "/",
+  validatorHandler(createProductoSchema, "body"),
+  crearProducto
+);
 
 /**
  * @swagger
  * /api/productos:
  *   get:
  *     summary: Obtiene todos los productos
- *     tags: [productos]
+ *     tags: [Productos]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de productos
@@ -89,14 +109,16 @@ routes.post("/productos", crearProducto);
  *               items:
  *                 $ref: '#/components/schemas/Producto'
  */
-routes.get("/productos", obtenerProductos);
+routes.get("/", obtenerProductos);
 
 /**
  * @swagger
  * /api/productos/{id}:
  *   get:
  *     summary: Obtiene un producto por ID
- *     tags: [productos]
+ *     tags: [Productos]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -112,14 +134,20 @@ routes.get("/productos", obtenerProductos);
  *             schema:
  *               $ref: '#/components/schemas/Producto'
  */
-routes.get("/productos/:id", obtenerProductoPorId);
+routes.get(
+  "/:id",
+  validatorHandler(getProductoParamsSchema, "params"),
+  obtenerProductoPorId
+);
 
 /**
  * @swagger
  * /api/productos/{id}:
  *   put:
  *     summary: Actualiza un producto por ID
- *     tags: [productos]
+ *     tags: [Productos]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -137,14 +165,21 @@ routes.get("/productos/:id", obtenerProductoPorId);
  *       200:
  *         description: Producto actualizado
  */
-routes.put("/productos/:id", actualizarProducto);
+routes.put(
+  "/:id",
+  validatorHandler(getProductoParamsSchema, "params"),
+  validatorHandler(updateProductoSchema, "body"),
+  actualizarProducto
+);
 
 /**
  * @swagger
  * /api/productos/{id}:
  *   delete:
  *     summary: Elimina un producto por ID
- *     tags: [productos]
+ *     tags: [Productos]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -154,10 +189,12 @@ routes.put("/productos/:id", actualizarProducto);
  *         description: ID del producto
  *     responses:
  *       200:
- *         description: Producto eliminado
- *       404:
- *         description: Producto no encontrado
+ *         description: Producto eliminado exitosamente
  */
-routes.delete("/productos/:id", borrarProducto);
+routes.delete(
+  "/:id",
+  validatorHandler(deleteProductoSchema, "params"),
+  borrarProducto
+);
 
 export default routes;

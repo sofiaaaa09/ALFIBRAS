@@ -42,6 +42,8 @@ const routes = express.Router();
  *   post:
  *     summary: Crea una nueva factura
  *     tags: [Facturas]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -52,7 +54,7 @@ const routes = express.Router();
  *       201:
  *         description: Factura creada exitosamente
  */
-routes.post("/facturas", crearFactura);
+routes.post("/", crearFactura);
 
 /**
  * @swagger
@@ -60,6 +62,8 @@ routes.post("/facturas", crearFactura);
  *   get:
  *     summary: Obtiene todas las facturas
  *     tags: [Facturas]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de facturas
@@ -70,7 +74,7 @@ routes.post("/facturas", crearFactura);
  *               items:
  *                 $ref: '#/components/schemas/Factura'
  */
-routes.get("/facturas", obtenerFacturas);
+routes.get("/", obtenerFacturas);
 
 /**
  * @swagger
@@ -78,6 +82,8 @@ routes.get("/facturas", obtenerFacturas);
  *   get:
  *     summary: Obtiene una factura por ID
  *     tags: [Facturas]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -95,7 +101,7 @@ routes.get("/facturas", obtenerFacturas);
  *       404:
  *         description: Factura no encontrada
  */
-routes.get("/facturas/:id", obtenerFacturaPorId);
+routes.get("/:id", obtenerFacturaPorId);
 
 /**
  * @swagger
@@ -103,6 +109,8 @@ routes.get("/facturas/:id", obtenerFacturaPorId);
  *   put:
  *     summary: Actualiza una factura por ID
  *     tags: [Facturas]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -122,7 +130,7 @@ routes.get("/facturas/:id", obtenerFacturaPorId);
  *       404:
  *         description: Factura no encontrada
  */
-routes.put("/facturas/:id", actualizarFactura);
+routes.put("/:id", actualizarFactura);
 
 /**
  * @swagger
@@ -130,6 +138,8 @@ routes.put("/facturas/:id", actualizarFactura);
  *   delete:
  *     summary: Elimina una factura por ID
  *     tags: [Facturas]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -143,6 +153,6 @@ routes.put("/facturas/:id", actualizarFactura);
  *       404:
  *         description: Factura no encontrada
  */
-routes.delete("/facturas/:id", borrarFactura);
+routes.delete("/:id", borrarFactura);
 
 export default routes;
