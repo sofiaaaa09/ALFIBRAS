@@ -20,6 +20,7 @@ export default function ProductForm({ productoSelec }) {
     const fetchCategorias = async () => {
       try {
         const response = await axios.get("http://localhost:9001/api/categorias");
+        console.log(response.data);
         setCategorias(response.data); // Establecer las categorías en el estado
       } catch (error) {
         console.error("Error al obtener las categorías:", error);
@@ -71,6 +72,7 @@ export default function ProductForm({ productoSelec }) {
       alert("Producto registrado exitosamente.");
       // Vuelve a cargar los productos
       const response = await axios.get("http://localhost:9001/api/productos");
+      console.log(response.data);
       setProductos(response.data);
     } catch (err) {
       console.error("Error al enviar el formulario:", err.response?.data);
@@ -406,4 +408,3 @@ const styles = {
     justifyContent: "space-between",
   },
 };
-

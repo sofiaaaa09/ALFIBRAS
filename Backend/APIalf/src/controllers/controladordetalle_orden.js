@@ -2,49 +2,50 @@ import { validatorHandler } from "../midleware/validator.handler.js";
 import detalleOrdenSchema from "../models/detalle_ordenes.js";
 import productoSchema from "../models/productos.js";
 import ordenSchema from "../models/ordenes.js";
-import { createDetalleOrdenSchema,
+import {
+  createDetalleOrdenSchema,
   getDetalleOrdenParamsSchema,
-   updateDetalleOrdenSchema,
-    deleteDetalleOrdenSchema } from "../validators/detalleOrdenValidarDTO.js";
+  updateDetalleOrdenSchema,
+  deleteDetalleOrdenSchema,
+} from "../validators/detalleOrdenValidarDTO.js";
 
-    export const crearDetalleOrden = async (req, res) => {
-      try {
-        const { numero_producto, cantidad, precio_unitario, personalizacion, archivo } = req.body;
-    
-        // Verificar que el número de producto y la orden existen
-        const producto = await productoSchema.findOne({ numero_producto });
-        if (!producto) {
-          return res.status(404).json({ message: "Producto no encontrado" });
-        }
-    
-        // Generar el número de orden automáticamente
-        const ultimaOrden = await ordenSchema.findOne().sort({ numero_orden: -1 });
-        const numero_orden = ultimaOrden ? ultimaOrden.numero_orden + 1 : 1;
-    
-        // Crear el detalle de la orden
-        const detalleOrden = new detalleOrdenSchema({
-          numero_orden,  // Este valor se genera automáticamente
-          numero_producto,
-          cantidad,
-          precio_unitario,
-          personalizacion,
-          archivo
-        });
-    
-        const detalleOrdenCreado = await detalleOrden.save();
-        res.status(201).json(detalleOrdenCreado);
-    
-      } catch (error) {
-        res.status(500).json({ message: error.message });
-      }
-    };
-    
+export const crearDetalleOrden = async (req, res) => {
+  try {
+    const { numero_producto, cantidad, precio_unitario, personalizacion, archivo } = req.body;
 
+    // Verificar que el número de producto existe
+    const producto = await productoSchema.findOne({ numero_producto });
+    if (!producto) {
+      return res.status(404).json({ message: "Producto no encontrado" });
+    }
+
+    // MODIFICACIÓN AQUÍ: Generar el número de orden de manera más robusta
+    const ultimaOrden = await ordenSchema.findOne({}, {}, { sort: { numero_orden: -1 } });
+    const numero_orden = ultimaOrden ? (parseInt(ultimaOrden.numero_orden) + 1).toString() : "1";
+
+    // Crear el detalle de la orden con nombres adicionales
+    const detalleOrden = new detalleOrdenSchema({
+      numero_orden, // Asegúrate de que sea un string
+      numero_producto,
+      producto_nombre: producto.nombre,
+      categoria_nombre: producto.categoria,
+      cantidad,
+      precio_unitario,
+      personalizacion,
+      archivo,
+    });
+
+    const detalleOrdenCreado = await detalleOrden.save();
+    res.status(201).json(detalleOrdenCreado);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 // Obtener todos los detalles de órdenes
 export const obtenerDetallesOrden = async (req, res) => {
   try {
     const detallesOrden = await detalleOrdenSchema.find();
-    res.json(detallesOrden);
+    res.json(detallesOrden); // Devuelve todos los campos del esquema
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -94,23 +95,16 @@ export const actualizarDetalleOrden = [
   async (req, res) => {
     const { id } = req.params;
     const {
-      numero_orden,
-      producto_nombre,
-      categoria_nombre,
+      numero_producto,
       cantidad,
       precio_unitario,
       personalizacion,
+      archivo,
     } = req.body;
 
     try {
-      // Verificar que el número de orden exista
-      const orden = await ordenSchema.findOne({ numero_orden });
-      if (!orden) {
-        return res.status(404).json({ message: "Número de orden no encontrado" });
-      }
-
-      // Verificar que el producto exista por su nombre
-      const producto = await productoSchema.findOne({ nombre: producto_nombre });
+      // Verificar que el producto exista
+      const producto = await productoSchema.findOne({ numero_producto });
       if (!producto) {
         return res.status(404).json({ message: "Producto no encontrado" });
       }
@@ -118,12 +112,13 @@ export const actualizarDetalleOrden = [
       const actualizarDetalle = await detalleOrdenSchema.findByIdAndUpdate(
         id,
         {
-          numero_orden,
-          producto_nombre,
-          categoria_nombre,
+          numero_producto,
+          producto_nombre: producto.nombre, // Actualizar nombre del producto
+          categoria_nombre: producto.categoria, // Actualizar nombre de la categoría
           cantidad,
           precio_unitario,
           personalizacion,
+          archivo,
         },
         { new: true }
       );

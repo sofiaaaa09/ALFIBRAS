@@ -1,39 +1,8 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import logo from "../assets/logo.jpeg";
+import { Link } from "react-router-dom";
+import logo from "../assets/logo.jpeg"; // Ajusta la ruta según donde esté el logo
 
 function Navbar() {
-  const token = localStorage.getItem("token");
-  const navigate = useNavigate();
-
-  let isAuthenticated = false;
-  let isAdmin = false;
-
-  if (token) {
-    try {
-      const decoded = JSON.parse(atob(token.split(".")[1])); // Decodificamos el token JWT
-      isAuthenticated = !!decoded; // Si el token es válido, lo consideramos autenticado
-      isAdmin = decoded.role === "admin"; // Verificamos si el usuario es administrador
-    } catch (error) {
-      console.error("Error al decodificar el token:", error);
-      localStorage.removeItem("token"); // Eliminamos el token si es inválido
-    }
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem("token"); // Eliminamos el token del localStorage
-    navigate("/iniciar-sesion"); // Redirigimos al formulario de inicio de sesión
-  };
-
-  const handleNavigation = (route) => {
-    if (!isAuthenticated) {
-      // Si no está autenticado, redirige al inicio de sesión
-      navigate("/iniciar-sesion");
-    } else {
-      navigate(route); // Si está autenticado, navega a la ruta
-    }
-  };
-
   return (
     <nav
       className="navbar navbar-expand-lg navbar-light"
@@ -62,75 +31,51 @@ function Navbar() {
           />
         </Link>
 
-        {/* Navegación */}
-        <div className="collapse navbar-collapse justify-content-center" style={{ width: "100%" }}>
-          <ul className="navbar-nav" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+        {/* Barra de navegación con enlaces centrados */}
+        <div
+          className="collapse navbar-collapse justify-content-center"
+          style={{ width: "100%" }}
+        >
+          <ul
+            className="navbar-nav"
+            style={{ display: "flex", justifyContent: "center", width: "100%" }}
+          >
             <li className="nav-item">
-              <a
-                className="nav-link"
-                style={{ color: "white", cursor: "pointer" }}
-                onClick={() => handleNavigation("/productos")}
-              >
+              <Link className="nav-link" to="/categoria" style={{ color: "white" }}>
+                Categoría
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/productos2" style={{ color: "white" }}>
                 Productos
-              </a>
+              </Link>
             </li>
-            {isAdmin && (
-              <li className="nav-item">
-                <a
-                  className="nav-link"
-                  style={{ color: "white", cursor: "pointer" }}
-                  onClick={() => handleNavigation("/categoria")}
-                >
-                  Categoría
-                </a>
-              </li>
-            )}
             <li className="nav-item">
-              <a
-                className="nav-link"
-                style={{ color: "white", cursor: "pointer" }}
-                onClick={() => handleNavigation("/ordenes")}
-              >
+              <Link className="nav-link" to="/admin" style={{ color: "white" }}>
+                Admin
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/ordenes" style={{ color: "white" }}>
                 Órdenes
-              </a>
+              </Link>
             </li>
             <li className="nav-item">
-              <a
-                className="nav-link"
-                style={{ color: "white", cursor: "pointer" }}
-                onClick={() => handleNavigation("/factura")}
-              >
-                Facturas
-              </a>
-            </li>
-            <li className="nav-item">
-              <a
-                className="nav-link"
-                style={{ color: "white", cursor: "pointer" }}
-                onClick={() => handleNavigation("/detalleorden")}
-              >
+              <Link className="nav-link" to="/detalleorden" style={{ color: "white" }}>
                 Detalles de Órdenes
-              </a>
+              </Link>
             </li>
           </ul>
         </div>
 
         {/* Botones de sesión */}
         <div className="d-flex">
-          {isAuthenticated ? (
-            <button className="btn btn-outline-light" onClick={handleLogout}>
-              Cerrar sesión
-            </button>
-          ) : (
-            <>
-              <Link className="btn btn-outline-light me-2" to="/iniciar-sesion">
-                Iniciar sesión
-              </Link>
-              <Link className="btn btn-outline-light" to="/registrarse">
-                Registrarse
-              </Link>
-            </>
-          )}
+          <Link className="btn btn-outline-light me-2" to="/iniciar-sesion">
+            Iniciar sesión
+          </Link>
+          <Link className="btn btn-outline-light" to="/registrarse">
+            Registrarse
+          </Link>
         </div>
       </div>
     </nav>

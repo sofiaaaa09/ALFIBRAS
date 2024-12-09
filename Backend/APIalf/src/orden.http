@@ -3,13 +3,13 @@ POST http://localhost:9001/api/ordenes HTTP/1.1
 Content-Type: application/json
 
   {
-  "cliente_correo": "felipe1@gmail.com",
-  "fecha": "2024-11-26",
+  "cliente_correo": "mathias2@gmail.com",
+  "fecha": "2024-12-8",
   "estado": "pendiente",
   "total": 150.000,
   "detalles": [
-    "674e521d48c0c5b35e0cd936",  
-    "674e529548c0c5b35e0cd940"   
+    "6753208531c39edf9f12f174",  
+    "67532ef496145a7294ad4c31"   
   ]
 }
 

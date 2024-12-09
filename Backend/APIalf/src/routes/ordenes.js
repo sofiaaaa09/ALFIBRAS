@@ -25,22 +25,23 @@ const routes = express.Router();
  *       properties:
  *         cliente_correo:
  *           type: string
- *           description: Correo del cliente que realiza la orden
+ *           description: Correo del cliente que realiza la orden.
  *         fecha:
  *           type: string
  *           format: date
- *           description: Fecha de la orden
+ *           description: Fecha de la orden.
  *         estado:
  *           type: string
- *           description: Estado de la orden (pendiente, enviado, entregado)
+ *           enum: [pendiente, enviado, entregado]
+ *           description: Estado de la orden (pendiente, enviado, entregado).
  *         total:
  *           type: number
- *           description: Total de la orden
+ *           description: Total de la orden.
  *         detalles:
  *           type: array
  *           items:
  *             type: string
- *             description: ID de los detalles de la orden
+ *             description: ID de los detalles de la orden.
  *       required:
  *         - cliente_correo
  *         - fecha
@@ -59,10 +60,8 @@ const routes = express.Router();
  * @swagger
  * /api/ordenes:
  *   post:
- *     summary: Crea una nueva orden
+ *     summary: Crear una nueva orden
  *     tags: [Órdenes]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -72,6 +71,14 @@ const routes = express.Router();
  *     responses:
  *       201:
  *         description: Orden creada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Orden'
+ *       400:
+ *         description: Error en los datos enviados.
+ *       500:
+ *         description: Error interno del servidor.
  */
 routes.post(
   "/",
@@ -83,10 +90,8 @@ routes.post(
  * @swagger
  * /api/ordenes:
  *   get:
- *     summary: Obtiene todas las órdenes
+ *     summary: Obtener todas las órdenes
  *     tags: [Órdenes]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de órdenes
@@ -96,6 +101,8 @@ routes.post(
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Orden'
+ *       500:
+ *         description: Error interno del servidor.
  */
 routes.get("/", obtenerOrdenes);
 
@@ -103,26 +110,26 @@ routes.get("/", obtenerOrdenes);
  * @swagger
  * /api/ordenes/{id}:
  *   get:
- *     summary: Obtiene una orden por ID
+ *     summary: Obtener una orden por ID
  *     tags: [Órdenes]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la orden
+ *           description: ID de la orden
  *     responses:
  *       200:
- *         description: Información de la orden
+ *         description: Detalles de la orden encontrada
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Orden'
  *       404:
  *         description: Orden no encontrada
+ *       500:
+ *         description: Error interno del servidor.
  */
 routes.get(
   "/:id",
@@ -134,17 +141,15 @@ routes.get(
  * @swagger
  * /api/ordenes/{id}:
  *   put:
- *     summary: Actualiza una orden por ID
+ *     summary: Actualizar una orden por ID
  *     tags: [Órdenes]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la orden
+ *           description: ID de la orden
  *     requestBody:
  *       required: true
  *       content:
@@ -153,9 +158,17 @@ routes.get(
  *             $ref: '#/components/schemas/Orden'
  *     responses:
  *       200:
- *         description: Orden actualizada exitosamente
+ *         description: Orden actualizada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Orden'
+ *       400:
+ *         description: Error en los datos enviados.
  *       404:
- *         description: Orden no encontrada
+ *         description: Orden no encontrada.
+ *       500:
+ *         description: Error interno del servidor.
  */
 routes.put(
   "/:id",
@@ -168,22 +181,22 @@ routes.put(
  * @swagger
  * /api/ordenes/{id}:
  *   delete:
- *     summary: Elimina una orden por ID
+ *     summary: Eliminar una orden por ID
  *     tags: [Órdenes]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la orden
+ *           description: ID de la orden
  *     responses:
  *       200:
- *         description: Orden eliminada exitosamente
+ *         description: Orden eliminada correctamente.
  *       404:
- *         description: Orden no encontrada
+ *         description: Orden no encontrada.
+ *       500:
+ *         description: Error interno del servidor.
  */
 routes.delete(
   "/:id",
@@ -192,4 +205,3 @@ routes.delete(
 );
 
 export default routes;
-

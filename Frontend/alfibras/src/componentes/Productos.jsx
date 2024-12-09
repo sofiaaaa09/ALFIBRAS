@@ -66,12 +66,6 @@ function Productos() {
                 Entre estos, el ESP de última generación asegura la estabilidad
                 del vehículo y ayuda a mantenerlo en el curso.
               </p>
-              <button
-                className="btn btn-primary"
-                onClick={() => agregarAlCarrito("productoId1", 1)}
-              >
-                Agregar al carrito
-              </button>
             </div>
           </div>
         </div>
@@ -91,12 +85,6 @@ function Productos() {
                 Entre estos, el ESP de última generación asegura la estabilidad
                 del vehículo y ayuda a mantenerlo en el curso.
               </p>
-              <button
-                className="btn btn-primary"
-                onClick={() => agregarAlCarrito("productoId2", 1)}
-              >
-                Agregar al carrito
-              </button>
             </div>
           </div>
         </div>
@@ -116,12 +104,6 @@ function Productos() {
                 debido a su alta relación de resistencia-peso y a su resistencia a
                 duras condiciones climáticas.
               </p>
-              <button
-                className="btn btn-primary"
-                onClick={() => agregarAlCarrito("productoId3", 1)}
-              >
-                Agregar al carrito
-              </button>
             </div>
           </div>
         </div>
@@ -140,12 +122,6 @@ function Productos() {
                 Alfibras incluye en su línea de servicios la adecuación interna
                 para vehículos de transporte público.
               </p>
-              <button
-                className="btn btn-primary"
-                onClick={() => agregarAlCarrito("productoId4", 1)}
-              >
-                Agregar al carrito
-              </button>
             </div>
           </div>
         </div>

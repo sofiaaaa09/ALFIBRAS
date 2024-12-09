@@ -25,50 +25,51 @@ const total = Joi.number().min(0).required().messages({
 });
 
 const detalles = Joi.array()
-  .items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)) // ID válidos de ObjectId
+  .items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
+    "string.pattern.base": "Cada ID en detalles debe ser un ObjectId válido.",
+  }))
   .required()
   .messages({
     "array.base": "Los detalles deben ser un arreglo de IDs válidos.",
     "any.required": "Los detalles son un campo requerido.",
   });
 
-
 // Esquema de validación para la creación de una orden
 export const createOrdenSchema = Joi.object({
-cliente_correo,
-fecha,
-estado,
-total,
-detalles, // Nuevo campo
+  cliente_correo,
+  fecha,
+  estado,
+  total,
+  detalles, // Detalles es obligatorio
 });
 
 // Esquema de validación para actualizar una orden
 export const updateOrdenSchema = Joi.object({
-cliente_correo,
-fecha,
-estado,
-total,
-detalles,
+  cliente_correo,
+  fecha,
+  estado,
+  total,
+  detalles, // Detalles es obligatorio
 });
 
-// Esquema de validación para obtener una orden por ID (parámetros)
+// Esquema de validación para obtener una orden por ID
 export const getOrdenParamsSchema = Joi.object({
-id: Joi.string()
-  .pattern(/^[0-9a-fA-F]{24}$/)
-  .required()
-  .messages({
-    "string.pattern.base": "El campo ID debe ser un ObjectId válido.",
-    "any.required": "El campo ID es requerido.",
-  }),
+  id: Joi.string()
+    .pattern(/^[0-9a-fA-F]{24}$/)
+    .required()
+    .messages({
+      "string.pattern.base": "El campo ID debe ser un ObjectId válido.",
+      "any.required": "El campo ID es requerido.",
+    }),
 });
 
-// Esquema de validación para borrar una orden (parámetros)
+// Esquema de validación para borrar una orden
 export const deleteOrdenSchema = Joi.object({
-id: Joi.string()
-  .pattern(/^[0-9a-fA-F]{24}$/)
-  .required()
-  .messages({
-    "string.pattern.base": "El campo ID debe ser un ObjectId válido.",
-    "any.required": "El campo ID es requerido.",
-  }),
+  id: Joi.string()
+    .pattern(/^[0-9a-fA-F]{24}$/)
+    .required()
+    .messages({
+      "string.pattern.base": "El campo ID debe ser un ObjectId válido.",
+      "any.required": "El campo ID es requerido.",
+    }),
 });

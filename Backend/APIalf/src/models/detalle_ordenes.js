@@ -2,11 +2,19 @@ import mongoose from "mongoose";
 
 const detalleOrdenSchema = mongoose.Schema({
   numero_orden: {
-    type: String,  // Este será generado automáticamente
+    type: String, // Este será generado automáticamente
     required: true,
   },
   numero_producto: {
     type: Number, 
+    required: true,
+  },
+  producto_nombre: {
+    type: String, // Agrega este campo
+    required: true,
+  },
+  categoria_nombre: {
+    type: String, // Agrega este campo
     required: true,
   },
   cantidad: {
@@ -30,4 +38,3 @@ const detalleOrdenSchema = mongoose.Schema({
 });
 
 export default mongoose.model("DetalleOrden", detalleOrdenSchema);
-
