@@ -12,7 +12,7 @@ const fecha = Joi.date().required().messages({
   "any.required": "La fecha es un campo requerido.",
 });
 
-const estado = Joi.string().valid("pendiente", "enviado", "entregado").required().messages({
+const estado = Joi.string().valid("pendiente", "procesada", "completada", "enviado").required().messages({
   "string.base": "El estado debe ser un texto.",
   "any.required": "El estado es un campo requerido.",
   "any.only": "El estado debe ser uno de los siguientes: pendiente, enviado, entregado.",

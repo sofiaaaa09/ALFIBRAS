@@ -11,13 +11,17 @@ import {
 // Crear una orden
 export const crearOrden = async (req, res) => {
   try {
-    const { cliente_correo, total, estado, fecha, detalles } = req.body;
+    const { cliente_correo, estado, fecha, detalles } = req.body;
 
-    // Validar los IDs de los detalles
+    // Validar los IDs de los detalles y calcular total
     const detalleDocs = await detalleOrdenSchema.find({ _id: { $in: detalles } });
     if (detalleDocs.length !== detalles.length) {
       return res.status(404).json({ message: "Uno o más detalles no existen." });
     }
+
+    const total = detalleDocs.reduce((acc, detalle) => {
+      return acc + detalle.cantidad * detalle.precio_unitario;
+    }, 0);
 
     // Generar número de orden automáticamente
     const ultimaOrden = await ordenSchema.findOne().sort({ numero_orden: -1 });
