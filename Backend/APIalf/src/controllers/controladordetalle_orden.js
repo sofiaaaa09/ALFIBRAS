@@ -11,36 +11,70 @@ import {
 
 export const crearDetalleOrden = async (req, res) => {
   try {
-    const { numero_producto, cantidad, precio_unitario, personalizacion, archivo } = req.body;
+    const { numero_orden, productos, total } = req.body;
 
-    // Verificar que el número de producto existe
-    const producto = await productoSchema.findOne({ numero_producto });
-    if (!producto) {
-      return res.status(404).json({ message: "Producto no encontrado" });
+    // Validaciones iniciales
+    if (!Array.isArray(productos) || productos.length === 0) {
+      return res.status(400).json({ message: "El campo 'productos' debe ser un arreglo con al menos un producto." });
     }
 
-    // MODIFICACIÓN AQUÍ: Generar el número de orden de manera más robusta
-    const ultimaOrden = await ordenSchema.findOne({}, {}, { sort: { numero_orden: -1 } });
-    const numero_orden = ultimaOrden ? (parseInt(ultimaOrden.numero_orden) + 1).toString() : "1";
+    if (!total || total <= 0) {
+      return res.status(400).json({ message: "El campo 'total' debe ser un número mayor a 0." });
+    }
 
-    // Crear el detalle de la orden con nombres adicionales
+    // Validación de estructura de cada producto
+    for (const producto of productos) {
+      if (!producto.numero_producto || !producto.cantidad || !producto.precio_unitario) {
+        return res.status(400).json({ message: "Cada producto debe incluir 'numero_producto', 'cantidad', y 'precio_unitario'." });
+      }
+    }
+    // Validar que los productos existan
+    const productosExistentes = await productoSchema.find({
+      numero_producto: { $in: productos.map((p) => p.numero_producto) },
+    });
+
+    if (productosExistentes.length !== productos.length) {
+      return res.status(404).json({ message: "Uno o más productos no existen." });
+    }
+
+    // Calcular el total en el servidor
+    const totalCalculado = productos.reduce(
+      (suma, producto) => suma + producto.cantidad * producto.precio_unitario,
+      0
+    );
+
+    if (totalCalculado !== total) {
+      return res.status(400).json({
+        message: "El total enviado no coincide con el cálculo del servidor.",
+      });
+    }
+
+    // Generar número de orden de manera robusta
+    const ultimaOrden = await ordenSchema.findOne({}, {}, { sort: { numero_orden: -1 } });
+    const numero_ordenNuevo = ultimaOrden ? (parseInt(ultimaOrden.numero_orden) + 1).toString() : "1";
+
+    // Crear el detalle de la orden
     const detalleOrden = new detalleOrdenSchema({
-      numero_orden, // Asegúrate de que sea un string
-      numero_producto,
-      producto_nombre: producto.nombre,
-      categoria_nombre: producto.categoria,
-      cantidad,
-      precio_unitario,
-      personalizacion,
-      archivo,
+      numero_orden: numero_ordenNuevo,
+      productos: productos.map((producto) => ({
+        numero_producto: producto.numero_producto,
+        producto_nombre: producto.producto_nombre,
+        categoria_nombre: producto.categoria_nombre,
+        cantidad: producto.cantidad,
+        precio_unitario: producto.precio_unitario,
+      })),
+      total: totalCalculado,
     });
 
     const detalleOrdenCreado = await detalleOrden.save();
-    res.status(201).json(detalleOrdenCreado);
+    res.status(201).json({ message: "Detalle de orden creado exitosamente", detalleOrden: detalleOrdenCreado });
   } catch (error) {
+    console.error("Error al crear detalle de orden:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
+
 // Obtener todos los detalles de órdenes
 export const obtenerDetallesOrden = async (req, res) => {
   try {

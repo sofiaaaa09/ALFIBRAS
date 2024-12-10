@@ -5,24 +5,31 @@ const detalleOrdenSchema = mongoose.Schema({
     type: String, // Este será generado automáticamente
     required: true,
   },
-  numero_producto: {
-    type: Number, 
-    required: true,
-  },
-  producto_nombre: {
-    type: String, // Agrega este campo
-    required: true,
-  },
-  categoria_nombre: {
-    type: String, // Agrega este campo
-    required: true,
-  },
-  cantidad: {
-    type: Number,
-    required: true,
-    min: 1,
-  },
-  precio_unitario: {
+  productos: [{
+    numero_producto: {
+      type: Number, 
+      required: true,
+    },
+    producto_nombre: {
+      type: String, 
+      required: true,
+    },
+    categoria_nombre: {
+      type: String, 
+      required: true,
+    },
+    cantidad: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    precio_unitario: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  }],
+  total: {
     type: Number,
     required: true,
     min: 0,

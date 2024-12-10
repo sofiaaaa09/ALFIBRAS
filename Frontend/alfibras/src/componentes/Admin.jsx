@@ -5,7 +5,7 @@ export default function AdminForm({ adminSelec }) {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [rol, setRol] = useState("usuario");
+  const [password, setPassword] = useState(""); // Nuevo campo para la contraseña
   const [id, setId] = useState("");
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -15,8 +15,8 @@ export default function AdminForm({ adminSelec }) {
       setNombre(adminSelec.nombre);
       setEmail(adminSelec.email);
       setTelefono(adminSelec.telefono);
-      setRol(adminSelec.rol);
       setId(adminSelec._id);
+      setPassword(""); // No cargamos la contraseña para seguridad
       setIsEditing(true);
     }
   }, [adminSelec]);
@@ -28,10 +28,12 @@ export default function AdminForm({ adminSelec }) {
         nombre,
         email,
         telefono,
-        rol,
+        password,
+        rol: "admin", // Rol definido por defecto
       });
       setError("");
       alert("Administrador registrado exitosamente.");
+      limpiarFormulario();
     } catch (err) {
       setError(err.response?.data?.message || "Ocurrió un error inesperado.");
     }
@@ -40,112 +42,115 @@ export default function AdminForm({ adminSelec }) {
   const actualizarAdmin = async (event) => {
     event.preventDefault();
     try {
-      await axios.put(`http://localhost:9001/api/admins/${id}`, {
+      await axios.put(`http://localhost:9001/api/admins`, {
         nombre,
         email,
         telefono,
-        rol,
+        password, // Actualizamos la contraseña si es necesario
+        rol: "admin", // Rol definido por defecto
       });
       alert("Administrador actualizado correctamente.");
+      limpiarFormulario();
     } catch (err) {
       setError(err.response?.data?.message || "Ocurrió un error inesperado.");
     }
   };
 
+  const limpiarFormulario = () => {
+    setNombre("");
+    setEmail("");
+    setTelefono("");
+    setPassword("");
+    setId("");
+    setError("");
+    setIsEditing(false);
+  };
+
   return (
     <div style={styles.wrapper}>
       <div style={styles.card}>
-        {/* Nuevo título */}
-        <h1 style={styles.title}>Iniciar Sesión Administrador</h1>
-        <div style={styles.cardHeader}>
+        <h1 style={styles.title}>
           {isEditing ? "Modificar Administrador" : "Registrar Administrador"}
-        </div>
-        <div style={styles.cardBody}>
-          <form>
-            <fieldset style={styles.fieldset}>
-              <legend style={styles.legend}>
-                {isEditing ? "Modificar Administrador" : "Registrar Administrador"}
-              </legend>
-              <div style={styles.formGroup}>
-                <label htmlFor="txtNombre" style={styles.label}>
-                  Nombre
-                </label>
-                <input
-                  type="text"
-                  id="txtNombre"
-                  style={styles.input}
-                  placeholder="Nombre del administrador"
-                  onChange={(event) => setNombre(event.target.value)}
-                  value={nombre}
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label htmlFor="txtEmail" style={styles.label}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="txtEmail"
-                  style={styles.input}
-                  placeholder="Email del administrador"
-                  onChange={(event) => setEmail(event.target.value)}
-                  value={email}
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label htmlFor="txtTelefono" style={styles.label}>
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  id="txtTelefono"
-                  style={styles.input}
-                  placeholder="Teléfono del administrador"
-                  onChange={(event) => setTelefono(event.target.value)}
-                  value={telefono}
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label htmlFor="selectRol" style={styles.label}>
-                  Rol
-                </label>
-                <select
-                  id="selectRol"
-                  style={styles.select}
-                  value={rol}
-                  onChange={(event) => setRol(event.target.value)}
-                >
-                  <option value="usuario">Usuario</option>
-                  <option value="admin">Administrador</option>
-                </select>
-              </div>
-            </fieldset>
-          </form>
+        </h1>
+        <form onSubmit={isEditing ? actualizarAdmin : agregarAdmin}>
+          <fieldset style={styles.fieldset}>
+            <div style={styles.formGroup}>
+              <label htmlFor="txtNombre" style={styles.label}>
+                Nombre
+              </label>
+              <input
+                type="text"
+                id="txtNombre"
+                style={styles.input}
+                placeholder="Nombre del administrador"
+                onChange={(event) => setNombre(event.target.value)}
+                value={nombre}
+                required
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label htmlFor="txtEmail" style={styles.label}>
+                Email
+              </label>
+              <input
+                type="email"
+                id="txtEmail"
+                style={styles.input}
+                placeholder="Email del administrador"
+                onChange={(event) => setEmail(event.target.value)}
+                value={email}
+                required
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label htmlFor="txtTelefono" style={styles.label}>
+                Teléfono
+              </label>
+              <input
+                type="tel"
+                id="txtTelefono"
+                style={styles.input}
+                placeholder="Teléfono del administrador"
+                onChange={(event) => setTelefono(event.target.value)}
+                value={telefono}
+                required
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label htmlFor="txtPassword" style={styles.label}>
+                Contraseña
+              </label>
+              <input
+                type="password"
+                id="txtPassword"
+                style={styles.input}
+                placeholder="Contraseña del administrador"
+                onChange={(event) => setPassword(event.target.value)}
+                value={password}
+                required={!isEditing} // Solo requerido al registrar
+              />
+            </div>
+          </fieldset>
           {error && (
             <div style={styles.alert} role="alert">
               {error}
             </div>
           )}
-        </div>
-        <div style={styles.cardFooter}>
-          {isEditing ? (
-            <button
-              type="button"
-              style={styles.button}
-              onClick={actualizarAdmin}
-            >
-              Modificar
+          <div style={styles.cardFooter}>
+            <button type="submit" style={styles.button}>
+              {isEditing ? "Modificar" : "Guardar"}
             </button>
-          ) : (
-            <button
-              type="submit"
-              style={{ ...styles.button, backgroundColor: "#28a745" }}
-              onClick={agregarAdmin}
-            >
-              Guardar Administrador
-            </button>
-          )}
-        </div>
+            {isEditing && (
+              <button
+                type="button"
+                style={{ ...styles.button, backgroundColor: "#dc3545" }}
+                onClick={limpiarFormulario}
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -162,46 +167,24 @@ const styles = {
   },
   card: {
     width: "100%",
-    maxWidth: "600px",
+    maxWidth: "500px",
     backgroundColor: "#fff",
     borderRadius: "8px",
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-    overflow: "hidden",
+    padding: "20px",
   },
   title: {
     textAlign: "center",
-    fontSize: "2rem",
-    marginBottom: "15px",
-    color: "#2C3E50",
-  },
-  cardHeader: {
-    backgroundColor: "#2C3E50",
-    color: "white",
-    fontSize: "1.5rem",
-    padding: "15px",
-    textAlign: "center",
-  },
-  cardBody: {
-    padding: "20px",
-  },
-  cardFooter: {
-    padding: "15px",
-    textAlign: "center",
-    backgroundColor: "#f8f9fa",
+    fontSize: "1.8rem",
+    marginBottom: "20px",
+    color: "#333",
   },
   fieldset: {
     border: "none",
-    margin: "0",
     padding: "0",
   },
-  legend: {
-    fontSize: "1.2rem",
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: "15px",
-  },
   formGroup: {
-    marginBottom: "1rem",
+    marginBottom: "15px",
   },
   label: {
     fontWeight: "bold",
@@ -215,14 +198,8 @@ const styles = {
     borderRadius: "4px",
     border: "1px solid #ccc",
   },
-  select: {
-    width: "100%",
-    padding: "10px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-  },
   alert: {
-    color: "#d9534f",
+    color: "#dc3545",
     marginTop: "15px",
     textAlign: "center",
   },
@@ -234,5 +211,6 @@ const styles = {
     fontSize: "1rem",
     color: "white",
     backgroundColor: "#007bff",
+    margin: "5px",
   },
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function OrdenForm() {
@@ -9,6 +9,7 @@ export default function OrdenForm() {
   const [detallesDisponibles, setDetallesDisponibles] = useState([]);
   const [total, setTotal] = useState(0);
   const [ordenes, setOrdenes] = useState([]);
+  const [clientes, setClientes] = useState([]); // Nuevo estado para los clientes
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [ordenId, setOrdenId] = useState(null);
@@ -16,12 +17,14 @@ export default function OrdenForm() {
   useEffect(() => {
     obtenerOrdenes();
     obtenerDetalles();
+    obtenerClientes();  // Cargar clientes
   }, []);
 
   const obtenerOrdenes = async () => {
     try {
       const response = await axios.get("http://localhost:9001/api/ordenes");
-      setOrdenes(response.data);
+      const ordenesFiltradas = response.data.filter(orden => orden.estado !== "enviado");  // Filtrar las órdenes con estado "enviado"
+      setOrdenes(ordenesFiltradas);
     } catch (err) {
       console.error("Error al obtener órdenes:", err);
     }
@@ -33,6 +36,15 @@ export default function OrdenForm() {
       setDetallesDisponibles(response.data);
     } catch (err) {
       console.error("Error al obtener detalles de órdenes:", err);
+    }
+  };
+
+  const obtenerClientes = async () => {
+    try {
+      const response = await axios.get("http://localhost:9001/api/clientes"); // Llamada a la API para obtener los clientes
+      setClientes(response.data);
+    } catch (err) {
+      console.error("Error al obtener clientes:", err);
     }
   };
 
@@ -120,13 +132,19 @@ export default function OrdenForm() {
         <form onSubmit={manejarEnvioFormulario} style={styles.form}>
           <div style={styles.formGroup}>
             <label style={styles.label}>Correo del Cliente:</label>
-            <input
-              type="email"
+            <select
               style={styles.input}
               value={clienteEmail}
               onChange={(e) => setClienteEmail(e.target.value)}
               required
-            />
+            >
+              <option value="">Seleccione un cliente</option>
+              {clientes.map((cliente) => (
+                <option key={cliente.email} value={cliente.email}>
+                  {cliente.email} - {cliente.nombre}
+                </option>
+              ))}
+            </select>
           </div>
           <div style={styles.formGroup}>
             <label style={styles.label}>Estado:</label>

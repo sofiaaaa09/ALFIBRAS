@@ -22,11 +22,12 @@ const personalizacion = Joi.string().allow("").messages({
   "string.base": "El campo personalizacion debe ser una cadena de texto.",
 });
 
-const archivo = Joi.string().allow(null, "").messages({
-  "string.base": "El campo archivo debe ser una cadena de texto válida o nulo.",
+const archivo = Joi.string().optional().allow("").messages({
+  "string.base": "El archivo debe ser una cadena.",
+  "string.empty": "El archivo puede estar vacío.",
 });
 
-// Nuevas validaciones para los campos adicionales
+
 const producto_nombre = Joi.string().optional().messages({
   "string.base": "El campo producto_nombre debe ser una cadena de texto.",
 });
@@ -38,11 +39,17 @@ const categoria_nombre = Joi.string().optional().messages({
 // Esquemas de validación
 
 export const createDetalleOrdenSchema = Joi.object({
-  numero_producto: Joi.string().required(),
-  cantidad: Joi.number().min(1).required(),
-  precio_unitario: Joi.number().min(0).required(),
-  personalizacion: Joi.string().optional(),
-  archivo: Joi.string().allow(null).optional(),
+  numero_orden: Joi.string().optional(), // Opcional, ya que el backend lo genera
+  productos: Joi.array().items(Joi.object({
+    numero_producto: Joi.number().required(), // Cambia a number
+    producto_nombre: Joi.string().optional(),
+    categoria_nombre: Joi.string().optional(),
+    cantidad: Joi.number().min(1).required(),
+    precio_unitario: Joi.number().min(0).required(),
+    personalizacion: Joi.string().optional().allow(''),
+    archivo: Joi.string().optional().allow('', null)
+  })).min(1).required(), // Asegura que haya al menos un producto
+  total: Joi.number().positive().required()
 });
 
 // Para consultar o buscar por parámetros
