@@ -14,7 +14,7 @@ Content-Type: application/json
 GET http://localhost:9001/api/detalle_ordenes HTTP/1.1
 
 ### 
-GET http://localhost:9001/api/detalle_ordenes/ HTTP/1.1
+GET http://localhost:9001/api/detalle_ordenes/6758af3b803bf5428034dd59 HTTP/1.1
 
 ### 
 PUT http://localhost:9001/api/detalle_ordenes/673f9098776a53dbe6bcb17f HTTP/1.1

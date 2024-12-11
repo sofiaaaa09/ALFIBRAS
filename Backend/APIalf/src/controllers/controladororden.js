@@ -15,13 +15,25 @@ export const crearOrden = async (req, res) => {
 
     // Validar los IDs de los detalles y calcular total
     const detalleDocs = await detalleOrdenSchema.find({ _id: { $in: detalles } });
-    if (detalleDocs.length !== detalles.length) {
-      return res.status(404).json({ message: "Uno o más detalles no existen." });
-    }
 
-    const total = detalleDocs.reduce((acc, detalle) => {
-      return acc + detalle.cantidad * detalle.precio_unitario;
-    }, 0);
+if (detalleDocs.length !== detalles.length) {
+  const detallesInexistentes = detalles.filter(detalleId => 
+    !detalleDocs.some(doc => doc._id.toString() === detalleId)
+  );
+  return res.status(404).json({
+    message: `Los siguientes detalles no existen: ${detallesInexistentes.join(", ")}`
+  });
+}
+
+
+const total = detalleDocs.reduce((acc, detalle) => {
+  if (isNaN(detalle.cantidad) || isNaN(detalle.precio_unitario)) {
+    console.error("Cantidad o precio unitario inválido", detalle.cantidad, detalle.precio_unitario);
+    return acc; // Devolver el acumulador sin sumar
+  }
+  return acc + detalle.cantidad * detalle.precio_unitario;
+}, 0);
+
 
     // Generar número de orden automáticamente
     const ultimaOrden = await ordenSchema.findOne().sort({ numero_orden: -1 });

@@ -8,17 +8,16 @@ Content-Type: application/json
   "estado": "pendiente",
   "total": 150.000,
   "detalles": [
-    "6753208531c39edf9f12f174",  
-    "67532ef496145a7294ad4c31"   
+    "6758ddbbf058ce688c44aa74",  
+    "6758af3b803bf5428034dd59"   
   ]
 }
-
 
 ### 
 GET http://localhost:9001/api/ordenes HTTP/1.1
 
 ### 
-GET http://localhost:9001/api/ordenes/673f83d16463d796b8b56f29 HTTP/1.1
+GET http://localhost:9001/api/ordenes/67571d943e6321ed3dcdb34f HTTP/1.1
 
 ### 
 PUT http://localhost:9001/api/ordenes/673f83d16463d796b8b56f29 HTTP/1.1

@@ -31,9 +31,8 @@ export const crearCliente = [
 
 export const obtenerClientes = async (req, res) => {
   
-  try {console.log("controlador obtener cliente");
+  try {
     const clientes = await Cliente.find();
-    console.log("logica buscar");
     res.json(clientes);
   } catch (error) {
     res.status(500).json({ message: error.message });

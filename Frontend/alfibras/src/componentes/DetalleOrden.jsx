@@ -244,6 +244,7 @@ const styles = {
     alignItems: "center",
     padding: "20px",
     backgroundColor: "#f8f9fa",
+    marginTop: "80px", 
   },
   card: {
     backgroundColor: "#fff",
@@ -259,10 +260,17 @@ const styles = {
     fontSize: "1.5rem",
     fontWeight: "bold",
     marginBottom: "20px",
+    backgroundColor: "#2C3E50", 
+    color: "#fff", 
+    padding: "15px", 
+    borderRadius: "8px", 
+    width: "100%", 
+    boxSizing: "border-box",
   },
   form: {
     display: "flex",
     flexDirection: "column",
+    marginTop: "50px", 
   },
   formGroup: {
     marginBottom: "15px",
@@ -281,7 +289,7 @@ const styles = {
   },
   button: {
     marginTop: "10px",
-    backgroundColor: "#007bff",
+    backgroundColor: "#2C3E50",
     color: "#fff",
     border: "none",
     padding: "10px",
@@ -302,7 +310,7 @@ const styles = {
     borderRadius: "8px",
     boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
     padding: "20px",
-    maxWidth: "600px",
+    maxWidth: "800px",
     width: "100%",
   },
   listHeader: {

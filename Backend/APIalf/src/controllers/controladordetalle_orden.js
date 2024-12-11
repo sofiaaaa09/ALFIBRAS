@@ -85,15 +85,13 @@ export const obtenerDetallesOrden = async (req, res) => {
   }
 };
 
-// Obtener detalle de orden por número de orden
-export const obtenerDetalleOrdenPorNumeroOrden = async (req, res) => {
-  const { numero_orden } = req.params;
+// Cambiar de numero_orden a _id en el controlador
+export const obtenerDetalleOrdenPorId = async (req, res) => {
+  const { id } = req.params; // Cambiar a _id
   try {
-    const detalles = await detalleOrdenSchema.find({ numero_orden });
+    const detalles = await detalleOrdenSchema.find({ _id: id }); // Usar _id para la consulta
     if (!detalles.length) {
-      return res
-        .status(404)
-        .json({ message: "No se encontraron detalles para este número de orden" });
+      return res.status(404).json({ message: "No se encontraron detalles para este ID de orden" });
     }
     res.json(detalles);
   } catch (error) {

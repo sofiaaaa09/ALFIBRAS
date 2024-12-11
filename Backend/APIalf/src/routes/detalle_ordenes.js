@@ -2,7 +2,7 @@ import express from "express";
 import {
   crearDetalleOrden,
   obtenerDetallesOrden,
-  obtenerDetalleOrdenPorNumeroOrden,
+  obtenerDetalleOrdenPorId,
   actualizarDetalleOrden,
   borrarDetalleOrden,
 } from "../controllers/controladordetalle_orden.js";
@@ -122,9 +122,9 @@ router.get("/", obtenerDetallesOrden);
  *         description: Error interno del servidor.
  */
 router.get(
-  "/:numero_orden",
+  "/:id",
   validatorHandler(getDetalleOrdenParamsSchema, "params"),
-  obtenerDetalleOrdenPorNumeroOrden
+  obtenerDetalleOrdenPorId 
 );
 
 /**

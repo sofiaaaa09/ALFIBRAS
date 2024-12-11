@@ -96,12 +96,13 @@ export default function CategoriaForm() {
 
   return (
     <div style={styles.wrapper}>
-      <div style={styles.card}>
-        <div style={styles.cardHeader}>Crear o Editar Categoría</div>
-        <div style={styles.cardBody}>
-          <form>
-            <fieldset style={styles.fieldset}>
-              <legend style={styles.legend}>Información de la Nueva Categoría</legend>
+    <h1 style={styles.title}>Formulario de Categorías</h1> {/* Aquí se agrega el título */}
+    <div style={styles.card}>
+      <div style={styles.cardHeader}>Crear Categoria</div>
+      <div style={styles.cardBody}>
+        <form>
+          <fieldset style={styles.fieldset}>
+            <legend style={styles.legend}>Información de la Nueva Categoría</legend>
 
               <div style={styles.formGroup}>
                 <label htmlFor="txtNombreCategoria" style={styles.label}>
@@ -217,6 +218,12 @@ const styles = {
     padding: "20px",
     overflowY: "auto",
   },
+  title: {
+    fontSize: "2rem",
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: "40px",  // Espacio entre el título y el formulario
+  },
   card: {
     width: "100%",
     maxWidth: "800px",
@@ -305,4 +312,3 @@ const styles = {
     textAlign: "center",
   },
 };
-

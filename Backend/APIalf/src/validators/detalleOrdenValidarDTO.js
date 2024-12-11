@@ -39,16 +39,16 @@ const categoria_nombre = Joi.string().optional().messages({
 // Esquemas de validación
 
 export const createDetalleOrdenSchema = Joi.object({
-  numero_orden: Joi.string().optional(), // Opcional, ya que el backend lo genera
+  numero_orden: Joi.string().optional(), 
   productos: Joi.array().items(Joi.object({
-    numero_producto: Joi.number().required(), // Cambia a number
+    numero_producto: Joi.number().required(), 
     producto_nombre: Joi.string().optional(),
     categoria_nombre: Joi.string().optional(),
     cantidad: Joi.number().min(1).required(),
     precio_unitario: Joi.number().min(0).required(),
     personalizacion: Joi.string().optional().allow(''),
     archivo: Joi.string().optional().allow('', null)
-  })).min(1).required(), // Asegura que haya al menos un producto
+  })).min(1).required(), 
   total: Joi.number().positive().required()
 });
 

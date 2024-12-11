@@ -9,27 +9,30 @@ export default function OrdenForm() {
   const [detallesDisponibles, setDetallesDisponibles] = useState([]);
   const [total, setTotal] = useState(0);
   const [ordenes, setOrdenes] = useState([]);
-  const [clientes, setClientes] = useState([]); // Nuevo estado para los clientes
+  const [clientes, setClientes] = useState([]);
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [ordenId, setOrdenId] = useState(null);
 
+  // Cargar los datos de clientes, detalles y órdenes
   useEffect(() => {
     obtenerOrdenes();
     obtenerDetalles();
-    obtenerClientes();  // Cargar clientes
+    obtenerClientes();
   }, []);
 
+  // Obtener las órdenes filtradas para mostrar solo las no enviadas
   const obtenerOrdenes = async () => {
     try {
       const response = await axios.get("http://localhost:9001/api/ordenes");
-      const ordenesFiltradas = response.data.filter(orden => orden.estado !== "enviado");  // Filtrar las órdenes con estado "enviado"
+      const ordenesFiltradas = response.data.filter(orden => orden.estado !== "enviado");
       setOrdenes(ordenesFiltradas);
     } catch (err) {
       console.error("Error al obtener órdenes:", err);
     }
   };
 
+  // Obtener los detalles de productos disponibles
   const obtenerDetalles = async () => {
     try {
       const response = await axios.get("http://localhost:9001/api/detalle_ordenes");
@@ -39,15 +42,34 @@ export default function OrdenForm() {
     }
   };
 
+  // Obtener los clientes
   const obtenerClientes = async () => {
     try {
-      const response = await axios.get("http://localhost:9001/api/clientes"); // Llamada a la API para obtener los clientes
+      const response = await axios.get("http://localhost:9001/api/clientes");
       setClientes(response.data);
     } catch (err) {
       console.error("Error al obtener clientes:", err);
     }
   };
 
+  // Agregar un detalle seleccionado a la orden
+  const agregarDetalle = (detalle) => {
+    if (detallesSeleccionados.some((d) => d._id === detalle._id)) return;
+    setDetallesSeleccionados((prev) => [...prev, detalle]);
+  };
+
+  // Eliminar un detalle seleccionado
+  const eliminarDetalle = (detalleId) => {
+    setDetallesSeleccionados((prev) => prev.filter((d) => d._id !== detalleId));
+  };
+
+  // Calcular total de la orden
+  const calcularTotal = () => {
+    return detallesSeleccionados.reduce((total, detalle) => 
+      total + (detalle.cantidad * detalle.precio_unitario), 0);
+  };
+
+  // Manejo de envío de formulario
   const manejarEnvioFormulario = async (event) => {
     event.preventDefault();
 
@@ -56,9 +78,10 @@ export default function OrdenForm() {
       return;
     }
 
+    const totalCalculado = calcularTotal();
+
     const datosOrden = {
       cliente_correo: clienteEmail,
-      total,
       estado,
       fecha,
       detalles: detallesSeleccionados.map((detalle) => detalle._id),
@@ -80,21 +103,9 @@ export default function OrdenForm() {
     }
   };
 
-  const agregarDetalle = (detalle) => {
-    if (detallesSeleccionados.some((d) => d._id === detalle._id)) return;
-    setDetallesSeleccionados((prev) => [...prev, detalle]);
-    setTotal((prevTotal) => prevTotal + detalle.cantidad * detalle.precio_unitario);
-  };
-
-  const eliminarDetalle = (detalleId) => {
-    const detalleEliminado = detallesSeleccionados.find((d) => d._id === detalleId);
-    setDetallesSeleccionados((prev) => prev.filter((d) => d._id !== detalleId));
-    setTotal((prevTotal) => prevTotal - detalleEliminado.cantidad * detalleEliminado.precio_unitario);
-  };
-
+  // Limpiar el formulario después de registrar o editar la orden
   const limpiarFormulario = () => {
     setClienteEmail("");
-    setTotal(0);
     setEstado("pendiente");
     setFecha(new Date().toISOString().slice(0, 10));
     setDetallesSeleccionados([]);
@@ -102,6 +113,7 @@ export default function OrdenForm() {
     setOrdenId(null);
   };
 
+  // Eliminar una orden
   const eliminarOrden = async (id) => {
     if (window.confirm("¿Estás seguro de eliminar esta orden?")) {
       try {
@@ -113,16 +125,6 @@ export default function OrdenForm() {
         alert("Error al eliminar la orden");
       }
     }
-  };
-
-  const editarOrden = (orden) => {
-    setClienteEmail(orden.cliente_correo);
-    setFecha(orden.fecha.slice(0, 10));
-    setEstado(orden.estado);
-    setDetallesSeleccionados(orden.detalles);
-    setTotal(orden.total);
-    setIsEditing(true);
-    setOrdenId(orden._id);
   };
 
   return (
@@ -146,6 +148,7 @@ export default function OrdenForm() {
               ))}
             </select>
           </div>
+
           <div style={styles.formGroup}>
             <label style={styles.label}>Estado:</label>
             <select
@@ -160,6 +163,7 @@ export default function OrdenForm() {
               <option value="enviado">Enviado</option>
             </select>
           </div>
+
           <div style={styles.formGroup}>
             <label style={styles.label}>Fecha:</label>
             <input
@@ -170,36 +174,49 @@ export default function OrdenForm() {
               required
             />
           </div>
+
           <div style={styles.detailsContainer}>
             <h3>Detalles Disponibles</h3>
             <ul style={styles.detailsList}>
               {detallesDisponibles.map((detalle) => (
                 <li key={detalle._id} style={styles.detailsItem}>
                   {detalle.producto_nombre} - {detalle.cantidad} unidades - ${detalle.precio_unitario}
-                  <button style={styles.addButton} onClick={() => agregarDetalle(detalle)}>
+                  <button 
+                    type="button"
+                    style={styles.addButton} 
+                    onClick={() => agregarDetalle(detalle)}
+                  >
                     Agregar
                   </button>
                 </li>
               ))}
             </ul>
           </div>
+
           <div style={styles.detailsContainer}>
             <h3>Detalles Seleccionados</h3>
             <ul style={styles.detailsList}>
               {detallesSeleccionados.map((detalle) => (
                 <li key={detalle._id} style={styles.detailsItem}>
                   {detalle.producto_nombre} - {detalle.cantidad} unidades - ${detalle.precio_unitario}
-                  <button style={styles.removeButton} onClick={() => eliminarDetalle(detalle._id)}>
+                  <button 
+                    type="button"
+                    style={styles.removeButton} 
+                    onClick={() => eliminarDetalle(detalle._id)}
+                  >
                     Eliminar
                   </button>
                 </li>
               ))}
             </ul>
           </div>
+
           <div style={styles.totalContainer}>
-            <h4>Total: ${total}</h4>
+            <h4>Total: ${calcularTotal().toFixed(2)}</h4>
           </div>
+
           {error && <div style={styles.error}>{error}</div>}
+
           <button type="submit" style={styles.submitButton}>
             {isEditing ? "Actualizar Orden" : "Guardar Orden"}
           </button>
@@ -208,37 +225,36 @@ export default function OrdenForm() {
 
       <div style={styles.card}>
         <h3 style={styles.header}>Órdenes Registradas</h3>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th># Orden</th>
-              <th>Correo</th>
-              <th>Fecha</th>
-              <th>Estado</th>
-              <th>Total</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ordenes.map((orden) => (
-              <tr key={orden._id}>
-                <td>{orden.numero_orden}</td>
-                <td>{orden.cliente_correo}</td>
-                <td>{orden.fecha.slice(0, 10)}</td>
-                <td>{orden.estado}</td>
-                <td>${orden.total}</td>
-                <td>
-                  <button style={styles.editButton} onClick={() => editarOrden(orden)}>
-                    Editar
-                  </button>
-                  <button style={styles.deleteButton} onClick={() => eliminarOrden(orden._id)}>
-                    Eliminar
-                  </button>
-                </td>
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th># Orden</th>
+                <th>Correo</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Total</th>
+                <th>Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {ordenes.map((orden) => (
+                <tr key={orden._id} style={styles.tableRow}>
+                  <td>{orden.numero_orden}</td>
+                  <td>{orden.cliente_correo}</td>
+                  <td>{orden.fecha.slice(0, 10)}</td>
+                  <td>{orden.estado}</td>
+                  <td>${orden.total.toFixed(2)}</td>
+                  <td>
+                    <button style={styles.deleteButton} onClick={() => eliminarOrden(orden._id)}>
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -253,6 +269,7 @@ const styles = {
     minHeight: "100vh",
     backgroundColor: "#f8f9fa",
     padding: "20px",
+    marginTop: "80px", // Añade margen superior para evitar solapamiento con el navbar
   },
   card: {
     width: "100%",
@@ -266,9 +283,12 @@ const styles = {
   header: {
     fontSize: "1.5rem",
     fontWeight: "bold",
-    color: "#333",
+    color: "#fff", // Letras blancas
     textAlign: "center",
     marginBottom: "20px",
+    backgroundColor: "#2C3E50", // Fondo azul
+    padding: "10px", // Espaciado interno
+    borderRadius: "5px", // Bordes redondeados opcionales
   },
   form: {
     display: "flex",
@@ -352,10 +372,13 @@ const styles = {
     transition: "background-color 0.3s",
     marginTop: "10px",
   },
+  tableContainer: {
+    overflowX: "auto",
+    marginTop: "20px",
+  },
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    marginTop: "20px",
   },
   tableHeader: {
     backgroundColor: "#007bff",
@@ -369,21 +392,6 @@ const styles = {
   tableCell: {
     padding: "10px",
     textAlign: "left",
-  },
-  tableCellHeader: {
-    padding: "10px",
-    textAlign: "left",
-    fontWeight: "bold",
-  },
-  editButton: {
-    backgroundColor: "#ffc107",
-    color: "#fff",
-    padding: "5px 10px",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-    marginRight: "5px",
-    transition: "background-color 0.3s",
   },
   deleteButton: {
     backgroundColor: "#dc3545",

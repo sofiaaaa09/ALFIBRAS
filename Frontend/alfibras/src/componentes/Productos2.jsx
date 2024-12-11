@@ -304,6 +304,7 @@ const styles = {
     backgroundColor: "#f4f6f9",
     padding: "20px",
     overflowY: "auto",
+    marginTop: "70px", 
   },
   card: {
     width: "100%",
@@ -316,10 +317,11 @@ const styles = {
     padding: "20px",
   },
   cardHeader: {
-    backgroundColor: "#2C3E50",
-    color: "white",
-    fontSize: "1.5rem",
-    padding: "15px",
+    backgroundColor: "#2C3E50", 
+    color: "white", 
+    fontSize: "1.8rem", 
+    fontWeight: "bold", 
+    padding: "30px", 
     textAlign: "center",
     borderRadius: "8px 8px 0 0",
   },

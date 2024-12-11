@@ -175,9 +175,12 @@ const styles = {
   },
   title: {
     textAlign: "center",
-    fontSize: "1.8rem",
-    marginBottom: "20px",
-    color: "#333",
+    fontSize: "2rem", // Aumenté el tamaño del título
+    marginBottom: "30px", // Más espacio debajo del título
+    backgroundColor: "#2C3E50", // Fondo azul oscuro
+    color: "#fff", // Texto blanco
+    padding: "10px 0", // Espaciado interno
+    borderRadius: "5px", // Bordes redondeados
   },
   fieldset: {
     border: "none",
@@ -210,7 +213,7 @@ const styles = {
     cursor: "pointer",
     fontSize: "1rem",
     color: "white",
-    backgroundColor: "#007bff",
+    backgroundColor: "#2C3E50",
     margin: "5px",
   },
 };
