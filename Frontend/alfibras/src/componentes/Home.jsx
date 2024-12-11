@@ -6,23 +6,32 @@ import Ubicacion from "./Ubicacion";
 
 function Home() {
   const sectionStyle = {
-    backgroundImage: 'url("https://www.a-alvarez.com/img/ybc_blog/post/repararbarco-e1666702460178.jpg")', // Reemplaza con tu imagen de fondo
+    backgroundImage: 'url("https://rejiglass.com.mx/wp-content/uploads/2022/02/Como-trabajar-la-fibra-de-vidrio.jpg")',
     backgroundSize: "cover",
-    backgroundPosition: "center",
+    backgroundPosition: "50% 20%", // Ajusta la posición de la imagen
     color: "white",
+    display: "flex", // Usar flexbox
+    justifyContent: "center", // Centrado horizontal
+    alignItems: "center", // Centrado vertical
     textAlign: "center",
-    paddingTop: "100px",
-    paddingBottom: "100px",
+    height: "80vh", // Altura completa de la pantalla
     fontFamily: "Optima, sans-serif",
   };
+  
 
   return (
     <div>
-      {/* Bienvenida */}
       <div id="bienvenida" style={sectionStyle}>
-        <h1 className="text-white">¡Bienvenido a Alfibras!</h1>
-        <p className="lead text-white">Encuentra los mejores productos personalizados y con la mejor calidad.</p>
-      </div>
+  <div>
+    <h1 className="text-white" style={{ marginBottom: "10px" }}>
+      ¡Bienvenido a Alfibras!
+    </h1>
+    <p className="lead text-white" style={{ marginTop: "0" }}>
+      Encuentra los mejores productos personalizados y con la mejor calidad.
+    </p>
+  </div>
+</div>
+
 
 
       <section id="nosotros" style={{ padding: "50px 20px", textAlign: "center", backgroundColor: "#f8f9fa" }}>

@@ -185,12 +185,12 @@ export default function CategoriaForm() {
                   <td>{categoria.descripcion}</td>
                   <td>{categoria.estado}</td>
                   <td>
-                    <button
+                    {/* <button
                       style={styles.button}
                       onClick={() => editarCategoria(categoria)}
                     >
                       Editar
-                    </button>
+                    </button> */}
                     <button
                       style={{ ...styles.button, backgroundColor: "#dc3545" }}
                       onClick={() => eliminarCategoria(categoria._id)}

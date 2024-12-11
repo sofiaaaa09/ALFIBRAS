@@ -283,12 +283,12 @@ const styles = {
   header: {
     fontSize: "1.5rem",
     fontWeight: "bold",
-    color: "#fff", // Letras blancas
+    color: "#fff", 
     textAlign: "center",
     marginBottom: "20px",
-    backgroundColor: "#2C3E50", // Fondo azul
-    padding: "10px", // Espaciado interno
-    borderRadius: "5px", // Bordes redondeados opcionales
+    backgroundColor: "#2C3E50", 
+    padding: "10px", 
+    borderRadius: "5px", 
   },
   form: {
     display: "flex",

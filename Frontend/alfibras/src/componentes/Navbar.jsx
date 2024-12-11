@@ -50,11 +50,11 @@ function Navbar() {
                 Productos
               </Link>
             </li>
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <Link className="nav-link" to="/admin" style={{ color: "white" }}>
                 Admin
               </Link>
-            </li>
+            </li> */}
             <li className="nav-item">
               <Link className="nav-link" to="/ordenes" style={{ color: "white" }}>
                 Órdenes

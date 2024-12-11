@@ -34,7 +34,6 @@ const total = detalleDocs.reduce((acc, detalle) => {
   return acc + detalle.cantidad * detalle.precio_unitario;
 }, 0);
 
-
     // Generar número de orden automáticamente
     const ultimaOrden = await ordenSchema.findOne().sort({ numero_orden: -1 });
     const numero_orden = ultimaOrden ? ultimaOrden.numero_orden + 1 : 1;
