@@ -1,314 +1,797 @@
 import { useState, useEffect } from "react";
+import api from "../componentes/api";
+import localforage from "localforage";
 
 export default function CategoriaForm() {
-  const [nombreCategoria, setNombreCategoria] = useState("");
-  const [descripcionCategoria, setDescripcionCategoria] = useState("");
-  const [estadoCategoria, setEstadoCategoria] = useState("activo");
+  const [formData, setFormData] = useState({
+    nombreCategoria: "",
+    descripcionCategoria: "",
+    estadoCategoria: "activo"
+  });
   const [categorias, setCategorias] = useState([]);
   const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     obtenerCategorias();
   }, []);
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const almacenarCategorias = async (categorias) => {
+    try {
+      await localforage.setItem("categorias", categorias);
+    } catch (error) {
+      console.error("Error al guardar las categorías:", error);
+    }
+  };
+
+  const obtenerCategorias = async (forzarServidor = false) => {
+    setIsLoading(true);
+    try {
+      if (!forzarServidor) {
+        const categoriasGuardadas = await localforage.getItem("categorias");
+        if (categoriasGuardadas) {
+          setCategorias(Array.isArray(categoriasGuardadas) ? categoriasGuardadas : []);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const response = await api.get("/categorias");
+      if (response.status !== 200) {
+        throw new Error("Error al obtener categorías");
+      }
+
+      const data = response.data;
+      const categoriasArray = Array.isArray(data) ? data : [];
+      setCategorias(categoriasArray);
+      await almacenarCategorias(categoriasArray);
+    } catch (error) {
+      console.error("Error al obtener categorías:", error);
+      setError("Error al obtener categorías");
+      setCategorias([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const registrarCategoria = async (event) => {
     event.preventDefault();
-  
-    // Validación de campos
-    if (!nombreCategoria || !descripcionCategoria) {
+
+    if (!formData.nombreCategoria || !formData.descripcionCategoria) {
       setError("Todos los campos son obligatorios.");
       return;
     }
-  
-    setError(""); // Limpiar errores anteriores
-  
-    // Realizar la solicitud POST
-    try {
-      const response = await fetch("http://localhost:9001/api/categorias", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json", // Especificamos que estamos enviando JSON
-        },
-        body: JSON.stringify({
-          nombre_categoria: nombreCategoria.trim(),  // Asegúrate de enviar 'nombre_categoria'
-          descripcion: descripcionCategoria.trim(),
-          estado: estadoCategoria, // Verifica que sea 'activo' o 'inactivo'
-        }),
-      });
-  
-      // Si la respuesta no es exitosa
-      if (!response.ok) {
-        const errorData = await response.json(); // Lee la respuesta como JSON
-        setError(errorData.message || "Ocurrió un error al registrar la categoría");
-        return;
-      }
-  
-      // Si la solicitud es exitosa
-      alert("Categoría registrada exitosamente");
-      setNombreCategoria(""); // Limpiar el campo
-      setDescripcionCategoria(""); // Limpiar el campo
-      setEstadoCategoria("activo"); // Restablecer el estado
-      obtenerCategorias(); // Actualizar lista de categorías
-    } catch (error) {
-      console.error("Error en la solicitud POST:", error);
-      setError(error.message || "Ocurrió un error al registrar la categoría");
-    }
-  };
-  
-  
-  
 
-  const obtenerCategorias = async () => {
+    setError("");
+    setIsLoading(true);
+
     try {
-      const response = await fetch("http://localhost:9001/api/categorias");
-      if (!response.ok) {
-        throw new Error("Error al obtener categorías");
+      if (isEditing && categoriaSeleccionada) {
+        const response = await api.put(`/categorias/${categoriaSeleccionada._id}`, {
+          nombre_categoria: formData.nombreCategoria.trim(),
+          descripcion: formData.descripcionCategoria.trim(),
+          estado: formData.estadoCategoria,
+        });
+
+        if (response.status !== 200) {
+          throw new Error("Error al actualizar la categoría");
+        }
+      } else {
+        const response = await api.post("/categorias", {
+          nombre_categoria: formData.nombreCategoria.trim(),
+          descripcion: formData.descripcionCategoria.trim(),
+          estado: formData.estadoCategoria,
+        });
+
+        if (response.status !== 201) {
+          throw new Error("Error al registrar la categoría");
+        }
       }
-      const data = await response.json();
-      setCategorias(data);
+
+      resetForm();
+      await obtenerCategorias(true);
     } catch (error) {
-      console.error("Error al obtener categorías:", error);
+      console.error("Error en el formulario:", error);
+      setError(error.response?.data?.message || "Ocurrió un error");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Eliminar categoría
   const eliminarCategoria = async (categoriaId) => {
+    if (!window.confirm("¿Estás seguro de eliminar esta categoría?")) return;
+    
     try {
-      const response = await fetch(`http://localhost:9001/api/categorias/${categoriaId}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
+      const response = await api.delete(`/categorias/${categoriaId}`);
+      if (response.status !== 200) {
         throw new Error("Error al eliminar la categoría");
       }
-      alert("Categoría eliminada exitosamente");
-      obtenerCategorias(); // Actualizar la lista después de eliminar
+      await obtenerCategorias(true);
     } catch (error) {
       console.error("Error al eliminar la categoría:", error);
+      setError("No se pudo eliminar la categoría");
     }
   };
 
-  // Editar categoría (cargar los datos en los campos del formulario)
   const editarCategoria = (categoria) => {
-    setNombreCategoria(categoria.nombre);
-    setDescripcionCategoria(categoria.descripcion);
-    setEstadoCategoria(categoria.estado);
+    setFormData({
+      nombreCategoria: categoria.nombre_categoria,
+      descripcionCategoria: categoria.descripcion,
+      estadoCategoria: categoria.estado
+    });
+    setIsEditing(true);
+    setCategoriaSeleccionada(categoria);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const resetForm = () => {
+    setFormData({
+      nombreCategoria: "",
+      descripcionCategoria: "",
+      estadoCategoria: "activo"
+    });
+    setIsEditing(false);
+    setCategoriaSeleccionada(null);
+  };
+
+  const filteredCategorias = categorias.filter(categoria =>
+    categoria.nombre_categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    categoria.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div style={styles.wrapper}>
-    <h1 style={styles.title}>Formulario de Categorías</h1> {/* Aquí se agrega el título */}
-    <div style={styles.card}>
-      <div style={styles.cardHeader}>Crear Categoria</div>
-      <div style={styles.cardBody}>
-        <form>
-          <fieldset style={styles.fieldset}>
-            <legend style={styles.legend}>Información de la Nueva Categoría</legend>
+    <div style={styles.container}>
+      <h1 style={styles.title}>Gestión de Categorías</h1>
 
-              <div style={styles.formGroup}>
-                <label htmlFor="txtNombreCategoria" style={styles.label}>
-                  Nombre de la categoría
-                </label>
-                <input
-                  type="text"
-                  id="txtNombreCategoria"
-                  style={styles.input}
-                  placeholder="Nombre de la categoría"
-                  onChange={(e) => setNombreCategoria(e.target.value)}
-                  value={nombreCategoria}
-                />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label htmlFor="txtDescripcionCategoria" style={styles.label}>
-                  Descripción
-                </label>
-                <textarea
-                  id="txtDescripcionCategoria"
-                  style={styles.input}
-                  placeholder="Descripción de la categoría"
-                  rows="3"
-                  onChange={(e) => setDescripcionCategoria(e.target.value)}
-                  value={descripcionCategoria}
-                ></textarea>
-              </div>
-
-              <div style={styles.formGroup}>
-                <label htmlFor="selectEstadoCategoria" style={styles.label}>
-                  Estado
-                </label>
-                <select
-                  id="selectEstadoCategoria"
-                  style={styles.select}
-                  value={estadoCategoria}
-                  onChange={(e) => setEstadoCategoria(e.target.value)}
-                >
-                  <option value="activo">Activo</option>
-                  <option value="inactivo">Inactivo</option>
-                </select>
-              </div>
-            </fieldset>
-          </form>
-          {error && (
-            <div style={styles.alert} role="alert">
-              {error}
+      <div style={styles.gridContainer}>
+        {/* Formulario */}
+        <div style={styles.formCard}>
+          <h2 style={styles.cardHeader}>
+            {isEditing ? (
+              <>
+                <i className="fas fa-edit" style={styles.icon}></i> Editar Categoría
+              </>
+            ) : (
+              <>
+                <i className="fas fa-plus" style={styles.icon}></i> Nueva Categoría
+              </>
+            )}
+          </h2>
+          <form onSubmit={registrarCategoria} style={styles.form}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>
+                <i className="fas fa-tag" style={styles.inputIcon}></i> Nombre de la categoría
+              </label>
+              <input
+                type="text"
+                name="nombreCategoria"
+                style={styles.input}
+                placeholder="Ej: Sillas, Puertas, etc."
+                onChange={handleInputChange}
+                value={formData.nombreCategoria}
+                required
+              />
             </div>
-          )}
-        </div>
-        <div style={styles.cardFooter}>
-          <button
-            type="submit"
-            style={{ ...styles.button, backgroundColor: "#28a745" }}
-            onClick={registrarCategoria}
-          >
-            Guardar Categoría
-          </button>
-        </div>
-      </div>
 
-      
-      <div style={styles.card}>
-        <div style={styles.cardHeader}>Lista de Categorías</div>
-        <div style={styles.cardBody}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categorias.map((categoria) => (
-                <tr key={categoria._id}>
-                  <td>{categoria.nombre}</td>
-                  <td>{categoria.descripcion}</td>
-                  <td>{categoria.estado}</td>
-                  <td>
-                    {/* <button
-                      style={styles.button}
-                      onClick={() => editarCategoria(categoria)}
-                    >
-                      Editar
-                    </button> */}
-                    <button
-                      style={{ ...styles.button, backgroundColor: "#dc3545" }}
-                      onClick={() => eliminarCategoria(categoria._id)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>
+                <i className="fas fa-align-left" style={styles.inputIcon}></i> Descripción
+              </label>
+              <textarea
+                name="descripcionCategoria"
+                style={{ ...styles.input, minHeight: "100px" }}
+                placeholder="Describe las características de esta categoría"
+                onChange={handleInputChange}
+                value={formData.descripcionCategoria}
+                required
+              />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>
+                <i className="fas fa-power-off" style={styles.inputIcon}></i> Estado
+              </label>
+              <div style={styles.radioGroup}>
+                <label style={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="estadoCategoria"
+                    value="activo"
+                    checked={formData.estadoCategoria === "activo"}
+                    onChange={handleInputChange}
+                    style={styles.radioInput}
+                  />
+                  <span style={formData.estadoCategoria === "activo" ? styles.radioActive : styles.radioInactive}>
+                    Activo
+                  </span>
+                </label>
+                <label style={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="estadoCategoria"
+                    value="inactivo"
+                    checked={formData.estadoCategoria === "inactivo"}
+                    onChange={handleInputChange}
+                    style={styles.radioInput}
+                  />
+                  <span style={formData.estadoCategoria === "inactivo" ? styles.radioActive : styles.radioInactive}>
+                    Inactivo
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {error && (
+              <div style={styles.error}>
+                <i className="fas fa-exclamation-circle" style={styles.errorIcon}></i>
+                {error}
+              </div>
+            )}
+
+            <div style={styles.buttonGroup}>
+              <button 
+                type="submit" 
+                style={isEditing ? styles.updateButton : styles.saveButton}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin" style={styles.buttonIcon}></i> Procesando...
+                  </>
+                ) : isEditing ? (
+                  <>
+                    <i className="fas fa-save" style={styles.buttonIcon}></i> Actualizar
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-save" style={styles.buttonIcon}></i> Guardar
+                  </>
+                )}
+              </button>
+              {isEditing && (
+                <button
+                  type="button"
+                  style={styles.cancelButton}
+                  onClick={resetForm}
+                  disabled={isLoading}
+                >
+                  <i className="fas fa-times" style={styles.buttonIcon}></i> Cancelar
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* Lista de categorías */}
+        <div style={styles.listCard}>
+          <div style={styles.listHeader}>
+            <h2 style={styles.cardHeader}>
+              <i className="fas fa-list" style={styles.icon}></i> Categorías Registradas
+            </h2>
+            <div style={styles.searchContainer}>
+              <i className="fas fa-search" style={styles.searchIcon}></i>
+              <input
+                type="text"
+                placeholder="Buscar categorías..."
+                style={styles.searchInput}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div style={styles.tableContainer}>
+            {isLoading && !categorias.length ? (
+              <div style={styles.loading}>
+                <i className="fas fa-spinner fa-spin" style={styles.loadingIcon}></i> Cargando categorías...
+              </div>
+            ) : filteredCategorias.length === 0 ? (
+              <div style={styles.noData}>
+                <i className="fas fa-box-open" style={styles.noDataIcon}></i>
+                {searchTerm ? "No se encontraron categorías" : "No hay categorías registradas"}
+              </div>
+            ) : (
+              <div style={styles.responsiveTable}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr style={styles.tableHeaderRow}>
+                      <th style={styles.tableHeader}>Nombre</th>
+                      <th style={styles.tableHeader}>Descripción</th>
+                      <th style={styles.tableHeader}>Estado</th>
+                      <th style={{ ...styles.tableHeader, width: '150px' }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCategorias.map((categoria) => (
+                      <tr key={categoria._id} style={styles.tableRow}>
+                        <td style={styles.tableCell}>
+                          <div style={styles.cellContent}>
+                            <i className="fas fa-tag" style={styles.cellIcon}></i>
+                            {categoria.nombre_categoria}
+                          </div>
+                        </td>
+                        <td style={styles.tableCell}>
+                          <div style={styles.cellContent}>
+                            <i className="fas fa-align-left" style={styles.cellIcon}></i>
+                            {categoria.descripcion}
+                          </div>
+                        </td>
+                        <td style={styles.tableCell}>
+                          <span style={getStatusStyle(categoria.estado)}>
+                            {categoria.estado === "activo" ? (
+                              <i className="fas fa-check-circle" style={styles.statusIcon}></i>
+                            ) : (
+                              <i className="fas fa-times-circle" style={styles.statusIcon}></i>
+                            )}
+                            {categoria.estado}
+                          </span>
+                        </td>
+                        <td style={styles.tableCell}>
+                          <div style={styles.actionButtons}>
+                            <button
+                              style={styles.editButton}
+                              onClick={() => editarCategoria(categoria)}
+                              disabled={isLoading}
+                              title="Editar"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                              style={styles.deleteButton}
+                              onClick={() => eliminarCategoria(categoria._id)}
+                              disabled={isLoading}
+                              title="Eliminar"
+                            >
+                              <i className="fas fa-trash-alt"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-const styles = {
-  wrapper: {
-    display: "flex",
-    flexDirection: "column",
+const getStatusStyle = (status) => {
+  const baseStyle = {
+    padding: "6px 12px",
+    borderRadius: "20px",
+    fontSize: "0.85rem",
+    fontWeight: "500",
+    display: "inline-flex",
     alignItems: "center",
+    gap: "6px"
+  };
+
+  switch (status) {
+    case "activo":
+      return { 
+        ...baseStyle, 
+        backgroundColor: "#D4EDDA",
+        color: "#155724",
+        border: "1px solid #155724"
+      };
+    case "inactivo":
+      return { 
+        ...baseStyle, 
+        backgroundColor: "#F8D7DA",
+        color: "#721C24",
+        border: "1px solid #721C24"
+      };
+    default:
+      return baseStyle;
+  }
+};
+
+const styles = {
+  container: {
+    padding: "2rem",
+    paddingTop: "5rem",
+    maxWidth: "1400px",
+    margin: "0 auto",
+    backgroundColor: "#f8f9fa",
     minHeight: "100vh",
-    backgroundColor: "#f4f6f9",
-    padding: "20px",
-    overflowY: "auto",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
   },
   title: {
-    fontSize: "2rem",
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: "40px",  // Espacio entre el título y el formulario
+    color: "#2C3E50",
+    textAlign: "center",
+    marginBottom: "2rem",
+    fontSize: "2.25rem",
+    fontWeight: "700",
+    paddingBottom: "0.6rem"
   },
-  card: {
-    width: "100%",
-    maxWidth: "800px",
+  gridContainer: {
+    display: "grid",
+    gridTemplateColumns: "1fr 2fr",
+    gap: "2rem",
+    alignItems: "start"
+  },
+  formCard: {
     backgroundColor: "#fff",
     borderRadius: "8px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
+    marginBottom: "2rem",
     overflow: "hidden",
-    marginBottom: "20px",
+    position: "sticky",
+    top: "20px"
+  },
+  listCard: {
+    backgroundColor: "#fff",
+    borderRadius: "8px",
+    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
+    overflow: "hidden"
+  },
+  listHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "1rem",
+    paddingRight: "1rem"
   },
   cardHeader: {
     backgroundColor: "#2C3E50",
     color: "white",
-    fontSize: "1.5rem",
-    padding: "15px",
-    textAlign: "center",
+    padding: "1.25rem",
+    fontSize: "1.25rem",
+    margin: 0,
+    display: "flex",
+    alignItems: "center",
+    gap: "0.75rem"
   },
-  cardBody: {
-    padding: "20px",
+  icon: {
+    fontSize: "1.1rem"
   },
-  cardFooter: {
-    padding: "15px",
-    textAlign: "center",
-    backgroundColor: "#f8f9fa",
-  },
-  fieldset: {
-    border: "none",
-    margin: "0",
-    padding: "0",
-  },
-  legend: {
-    fontSize: "1.2rem",
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: "15px",
+  form: {
+    padding: "1.5rem 1.75rem"
   },
   formGroup: {
-    marginBottom: "1rem",
+    marginBottom: "1.5rem"
   },
   label: {
-    fontWeight: "bold",
-    color: "#555",
-    marginBottom: "8px",
     display: "block",
+    marginBottom: "0.75rem",
+    color: "#495057",
+    fontWeight: "600",
+    fontSize: "0.95rem",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
+  },
+  inputIcon: {
+    color: "#6c757d",
+    width: "20px",
+    textAlign: "center"
   },
   input: {
     width: "100%",
-    padding: "10px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
+    padding: "0.875rem",
+    borderRadius: "6px",
+    border: "1px solid #ced4da",
+    fontSize: "0.95rem",
+    transition: "all 0.2s ease",
+    backgroundColor: "#f8fafc",
+    ":focus": {
+      borderColor: "#2C3E50",
+      outline: "none",
+      boxShadow: "0 0 0 3px rgba(44, 62, 80, 0.1)",
+      backgroundColor: "white"
+    }
   },
-  select: {
-    width: "100%",
-    padding: "10px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-    backgroundColor: "white",
+  radioGroup: {
+    display: "flex",
+    gap: "1.5rem",
+    marginTop: "0.5rem"
   },
-  alert: {
-    color: "#d9534f",
-    marginTop: "15px",
-    textAlign: "center",
+  radioLabel: {
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer"
   },
-  button: {
-    padding: "10px 20px",
-    borderRadius: "5px",
+  radioInput: {
+    position: "absolute",
+    opacity: 0,
+    height: 0,
+    width: 0
+  },
+  radioActive: {
+    padding: "0.5rem 1rem",
+    borderRadius: "6px",
+    backgroundColor: "#2C3E50",
+    color: "white",
+    fontWeight: "500",
+    transition: "all 0.2s ease"
+  },
+  radioInactive: {
+    padding: "0.5rem 1rem",
+    borderRadius: "6px",
+    backgroundColor: "#f1f5f9",
+    color: "#495057",
+    fontWeight: "500",
+    transition: "all 0.2s ease",
+    ":hover": {
+      backgroundColor: "#e2e8f0"
+    }
+  },
+  buttonGroup: {
+    display: "flex",
+    gap: "1rem",
+    marginTop: "1.75rem"
+  },
+  saveButton: {
+    backgroundColor: "#2C3E50",
+    color: "white",
+    padding: "0.875rem 1.5rem",
     border: "none",
+    borderRadius: "6px",
     cursor: "pointer",
     fontSize: "1rem",
+    fontWeight: "600",
+    flex: 1,
+    transition: "all 0.2s ease",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem",
+    ":hover": {
+      backgroundColor: "#1a252f",
+      transform: "translateY(-1px)"
+    },
+    ":disabled": {
+      backgroundColor: "#95a5a6",
+      cursor: "not-allowed",
+      transform: "none"
+    }
+  },
+  updateButton: {
+    backgroundColor: "#2C3E50",
     color: "white",
-    backgroundColor: "#007bff",
-    marginRight: "10px",
+    padding: "0.875rem 1.5rem",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "1rem",
+    fontWeight: "600",
+    flex: 1,
+    transition: "all 0.2s ease",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem",
+    ":hover": {
+      backgroundColor: "#1a252f",
+      transform: "translateY(-1px)"
+    },
+    ":disabled": {
+      backgroundColor: "#95a5a6",
+      cursor: "not-allowed",
+      transform: "none"
+    }
+  },
+  cancelButton: {
+    backgroundColor: "#6c757d",
+    color: "white",
+    padding: "0.875rem 1.5rem",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "1rem",
+    fontWeight: "600",
+    flex: 1,
+    transition: "all 0.2s ease",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem",
+    ":hover": {
+      backgroundColor: "#5a6268",
+      transform: "translateY(-1px)"
+    },
+    ":disabled": {
+      backgroundColor: "#bdc3c7",
+      cursor: "not-allowed",
+      transform: "none"
+    }
+  },
+  buttonIcon: {
+    fontSize: "0.9rem"
+  },
+  error: {
+    color: "#dc3545",
+    backgroundColor: "#f8d7da",
+    padding: "0.875rem",
+    borderRadius: "6px",
+    marginTop: "1.5rem",
+    textAlign: "center",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem",
+    fontSize: "0.95rem",
+    fontWeight: "500"
+  },
+  errorIcon: {
+    fontSize: "1rem"
+  },
+  loading: {
+    padding: "2.5rem",
+    textAlign: "center",
+    color: "#2C3E50",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.75rem",
+    fontSize: "1rem",
+    fontWeight: "500"
+  },
+  loadingIcon: {
+    fontSize: "1.25rem"
+  },
+  noData: {
+    padding: "2.5rem",
+    textAlign: "center",
+    color: "#6c757d",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.75rem",
+    fontSize: "1rem"
+  },
+  noDataIcon: {
+    fontSize: "2rem",
+    color: "#ced4da",
+    marginBottom: "0.5rem"
+  },
+  searchContainer: {
+    position: "relative",
+    minWidth: "250px"
+  },
+  searchIcon: {
+    position: "absolute",
+    left: "12px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#adb5bd",
+    fontSize: "0.9rem"
+  },
+  searchInput: {
+    width: "100%",
+    padding: "0.625rem 1rem 0.625rem 2.25rem",
+    borderRadius: "6px",
+    border: "1px solid #ced4da",
+    fontSize: "0.9rem",
+    transition: "all 0.2s ease",
+    backgroundColor: "#f8fafc",
+    ":focus": {
+      borderColor: "#2C3E50",
+      outline: "none",
+      boxShadow: "0 0 0 3px rgba(44, 62, 80, 0.1)",
+      backgroundColor: "white"
+    }
+  },
+  tableContainer: {
+    overflowX: "auto",
+    padding: "0"
+  },
+  responsiveTable: {
+    width: "100%",
+    overflowX: "auto"
   },
   table: {
     width: "100%",
-    borderCollapse: "collapse",
+    borderCollapse: "separate",
+    borderSpacing: "0",
+    fontSize: "0.9rem"
   },
-  th: {
-    padding: "10px",
-    border: "1px solid #ccc",
-    textAlign: "center",
-    backgroundColor: "#f2f2f2",
+  tableHeaderRow: {
+    backgroundColor: "#2C3E50",
+    color: "white"
   },
-  td: {
-    padding: "10px",
-    border: "1px solid #ccc",
-    textAlign: "center",
+  tableHeader: {
+    padding: "1rem 1.25rem",
+    textAlign: "left",
+    fontWeight: "600",
+    fontSize: "0.85rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px"
   },
+  tableRow: {
+    transition: "all 0.2s ease",
+    ":hover": {
+      backgroundColor: "#f8f9fa"
+    },
+    ":nth-child(even)": {
+      backgroundColor: "#f8f9fa"
+    }
+  },
+  tableCell: {
+    padding: "1rem 1.25rem",
+    verticalAlign: "middle",
+    borderBottom: "1px solid #dee2e6"
+  },
+  cellContent: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.75rem"
+  },
+  cellIcon: {
+    color: "#6c757d",
+    fontSize: "0.9rem",
+    minWidth: "18px"
+  },
+  statusIcon: {
+    fontSize: "0.8rem"
+  },
+  actionButtons: {
+    display: "flex",
+    gap: "0.5rem"
+  },
+  editButton: {
+    backgroundColor: "#3498db",
+    color: "white",
+    border: "none",
+    padding: "0.5rem",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "0.85rem",
+    transition: "all 0.2s ease",
+    width: "32px",
+    height: "32px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    ":hover": {
+      backgroundColor: "#2980b9",
+      transform: "translateY(-1px)"
+    },
+    ":disabled": {
+      backgroundColor: "#bdc3c7",
+      cursor: "not-allowed",
+      transform: "none"
+    }
+  },
+  deleteButton: {
+    backgroundColor: "#e74c3c",
+    color: "white",
+    border: "none",
+    padding: "0.5rem",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "0.85rem",
+    transition: "all 0.2s ease",
+    width: "32px",
+    height: "32px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    ":hover": {
+      backgroundColor: "#c0392b",
+      transform: "translateY(-1px)"
+    },
+    ":disabled": {
+      backgroundColor: "#e0e0e0",
+      cursor: "not-allowed",
+      transform: "none"
+    }
+  }
 };

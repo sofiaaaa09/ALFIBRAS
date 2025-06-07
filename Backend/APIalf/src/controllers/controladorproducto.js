@@ -11,29 +11,29 @@ export const crearProducto = [
   validatorHandler(createProductoSchema, "body"),
   async (req, res) => {
     try {
-      // Verificar si el campo numero_producto está presente en la solicitud
+
       if (req.body.numero_producto) {
         return res.status(400).json({ message: "No se debe enviar el campo numero_producto. Se asignará automáticamente." });
       }
 
-      // Obtener el último número de producto, si no existe, empezamos con 1
+
       const ultimoProducto = await productoSchema.findOne().sort({ numero_producto: -1 });
 
-      // Si no hay productos, asignar 1, de lo contrario, incrementar el número de producto
+
       const numero_producto = ultimoProducto && !isNaN(ultimoProducto.numero_producto) 
         ? ultimoProducto.numero_producto + 1 
         : 1;
 
-      // Crear el producto, asignando el número de producto único
+
       const producto = new productoSchema({
         ...req.body,
-        numero_producto, // Asignamos el número de producto único
+        numero_producto,
       });
 
       const productoCreado = await producto.save();
       res.status(201).json(productoCreado);
     } catch (error) {
-      // Añadir más detalles en caso de error para poder depurar mejor
+
       console.error("Error creando producto:", error);
       res.status(500).json({ message: error.message });
     }
@@ -47,7 +47,7 @@ export const obtenerProductos = async (req, res) => {
   try {
     const productos = await productoSchema
       .find()
-      .populate("categoria", "nombre_categoria"); // Mostrar detalles de la categoría
+      .populate("categoria", "nombre_categoria"); 
     res.json(productos);  
   } catch (error) {
     res.status(500).json({ message: error.message });

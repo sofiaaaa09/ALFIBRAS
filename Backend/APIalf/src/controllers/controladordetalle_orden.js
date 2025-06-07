@@ -1,184 +1,265 @@
-import { validatorHandler } from "../midleware/validator.handler.js";
 import detalleOrdenSchema from "../models/detalle_ordenes.js";
 import productoSchema from "../models/productos.js";
 import ordenSchema from "../models/ordenes.js";
-import {
-  createDetalleOrdenSchema,
-  getDetalleOrdenParamsSchema,
-  updateDetalleOrdenSchema,
-  deleteDetalleOrdenSchema,
+import { validatorHandler } from "../midleware/validator.handler.js";
+import { 
+  createDetalleOrdenSchema, 
+  getDetalleOrdenParamsSchema, 
+  updateDetalleOrdenSchema, 
+  deleteDetalleOrdenSchema 
 } from "../validators/detalleOrdenValidarDTO.js";
 
-export const crearDetalleOrden = async (req, res) => {
-  try {
-    const { numero_orden, productos, total } = req.body;
-
-    // Validaciones iniciales
-    if (!Array.isArray(productos) || productos.length === 0) {
-      return res.status(400).json({ message: "El campo 'productos' debe ser un arreglo con al menos un producto." });
-    }
-
-    if (!total || total <= 0) {
-      return res.status(400).json({ message: "El campo 'total' debe ser un número mayor a 0." });
-    }
-
-    // Validación de estructura de cada producto
-    for (const producto of productos) {
-      if (!producto.numero_producto || !producto.cantidad || !producto.precio_unitario) {
-        return res.status(400).json({ message: "Cada producto debe incluir 'numero_producto', 'cantidad', y 'precio_unitario'." });
-      }
-    }
-    // Validar que los productos existan
-    const productosExistentes = await productoSchema.find({
-      numero_producto: { $in: productos.map((p) => p.numero_producto) },
-    });
-
-    if (productosExistentes.length !== productos.length) {
-      return res.status(404).json({ message: "Uno o más productos no existen." });
-    }
-
-    // Calcular el total en el servidor
-    const totalCalculado = productos.reduce(
-      (suma, producto) => suma + producto.cantidad * producto.precio_unitario,
-      0
-    );
-
-    if (totalCalculado !== total) {
-      return res.status(400).json({
-        message: "El total enviado no coincide con el cálculo del servidor.",
-      });
-    }
-
-    // Generar número de orden de manera robusta
-    const ultimaOrden = await ordenSchema.findOne({}, {}, { sort: { numero_orden: -1 } });
-    const numero_ordenNuevo = ultimaOrden ? (parseInt(ultimaOrden.numero_orden) + 1).toString() : "1";
-
-    // Crear el detalle de la orden
-    const detalleOrden = new detalleOrdenSchema({
-      numero_orden: numero_ordenNuevo,
-      productos: productos.map((producto) => ({
-        numero_producto: producto.numero_producto,
-        producto_nombre: producto.producto_nombre,
-        categoria_nombre: producto.categoria_nombre,
-        cantidad: producto.cantidad,
-        precio_unitario: producto.precio_unitario,
-      })),
-      total: totalCalculado,
-    });
-
-    const detalleOrdenCreado = await detalleOrden.save();
-    res.status(201).json({ message: "Detalle de orden creado exitosamente", detalleOrden: detalleOrdenCreado });
-  } catch (error) {
-    console.error("Error al crear detalle de orden:", error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-
-// Obtener todos los detalles de órdenes
-export const obtenerDetallesOrden = async (req, res) => {
-  try {
-    const detallesOrden = await detalleOrdenSchema.find();
-    res.json(detallesOrden); // Devuelve todos los campos del esquema
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Cambiar de numero_orden a _id en el controlador
-export const obtenerDetalleOrdenPorId = async (req, res) => {
-  const { id } = req.params; // Cambiar a _id
-  try {
-    const detalles = await detalleOrdenSchema.find({ _id: id }); // Usar _id para la consulta
-    if (!detalles.length) {
-      return res.status(404).json({ message: "No se encontraron detalles para este ID de orden" });
-    }
-    res.json(detalles);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Consultar un detalle de orden por ID
-export const consultarDetalleOrden = [
-  validatorHandler(getDetalleOrdenParamsSchema, "params"),
+export const crearDetalleOrden = [
+  validatorHandler(createDetalleOrdenSchema, "body"),
   async (req, res) => {
-    const { id } = req.params;
     try {
-      const detalleOrden = await detalleOrdenSchema.findById(id);
-      if (!detalleOrden) {
-        return res.status(404).json({
-          message: "Detalle de orden no encontrado",
+      const { productos, total, personalizacion = "", archivo = null } = req.body;
+
+      
+      if (!Array.isArray(productos) || productos.length === 0) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Debe incluir al menos un producto",
+          code: "PRODUCTOS_REQUERIDOS"
         });
       }
-      res.json(detalleOrden);
+
+      // Validar estructura de cada producto
+      const productosInvalidos = productos.filter(p => 
+        !p.numero_producto || 
+        !p.producto_nombre || 
+        !p.categoria_nombre || 
+        !p.cantidad || 
+        !p.precio_unitario
+      );
+
+      if (productosInvalidos.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Algunos productos no tienen todos los campos requeridos",
+          productosInvalidos,
+          code: "PRODUCTOS_INVALIDOS"
+        });
+      }
+
+      // Verificar existencia de productos
+      const numerosProductos = productos.map(p => p.numero_producto);
+      const productosExistentes = await productoSchema.find({ 
+        numero_producto: { $in: numerosProductos } 
+      });
+
+      if (productosExistentes.length !== productos.length) {
+        const productosNoEncontrados = numerosProductos.filter(
+          np => !productosExistentes.some(pe => pe.numero_producto === np)
+        );
+        return res.status(404).json({
+          success: false,
+          message: "Algunos productos no existen",
+          productosNoEncontrados,
+          code: "PRODUCTOS_NO_ENCONTRADOS"
+        });
+      }
+
+      // Calcular total y verificar
+      const totalCalculado = productos.reduce(
+        (suma, producto) => suma + (producto.cantidad * producto.precio_unitario),
+        0
+      );
+
+      if (totalCalculado !== total) {
+        return res.status(400).json({
+          success: false,
+          message: "El total no coincide con la suma de los productos",
+          totalRecibido: total,
+          totalCalculado: totalCalculado,
+          code: "TOTAL_INCORRECTO"
+        });
+      }
+
+      // Generar número de orden 
+      const ultimaOrden = await ordenSchema.findOne().sort({ numero_orden: -1 });
+      const numeroOrden = ultimaOrden ? 
+        (parseInt(ultimaOrden.numero_orden) + 1).toString() : "1";
+
+      // Crear detalle de orden
+      const nuevoDetalle = new detalleOrdenSchema({
+        numero_orden: numeroOrden,
+        productos: productos.map(p => ({
+          numero_producto: p.numero_producto,
+          producto_nombre: p.producto_nombre,
+          categoria_nombre: p.categoria_nombre,
+          cantidad: p.cantidad,
+          precio_unitario: p.precio_unitario
+        })),
+        total: totalCalculado,
+        personalizacion,
+        archivo: archivo || null
+      });
+
+      // Guardar en base de datos
+      const detalleGuardado = await nuevoDetalle.save();
+
+      res.status(201).json({
+        success: true,
+        message: "Detalle de orden creado exitosamente",
+        data: detalleGuardado,
+        code: "DETALLE_CREADO"
+      });
+
     } catch (error) {
+      console.error("Error al crear detalle de orden:", error);
       res.status(500).json({
-        message: error.message,
+        success: false,
+        message: "Error interno del servidor",
+        error: error.message,
+        code: "ERROR_SERVIDOR"
       });
     }
-  },
+  }
 ];
 
-// Actualizar un detalle de orden
+export const obtenerDetallesOrden = async (req, res) => {
+  try {
+    const detalles = await detalleOrdenSchema.find();
+    
+    if (!detalles || detalles.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No se encontraron detalles de orden",
+        code: "NO_ENCONTRADOS"
+      });
+    }
+
+    res.json({
+      success: true,
+      count: detalles.length,
+      data: detalles,
+      code: "DETALLES_ENCONTRADOS"
+    });
+
+  } catch (error) {
+    console.error("Error al obtener detalles:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener detalles",
+      error: error.message,
+      code: "ERROR_OBTENER_DETALLES"
+    });
+  }
+};
+
+
+export const obtenerDetalleOrdenPorId = async (req, res) => {
+  try {
+    const detalle = await detalleOrdenSchema.findById(req.params.id);
+    if (!detalle) {
+      return res.status(404).json({
+        success: false,
+        message: "Detalle no encontrado",
+        code: "DETALLE_NO_ENCONTRADO"
+      });
+    }
+    res.json({
+      success: true,
+      data: detalle,
+      code: "DETALLE_ENCONTRADO"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener detalle",
+      error: error.message,
+      code: "ERROR_OBTENER_DETALLE"
+    });
+  }
+};
+
+
+
 export const actualizarDetalleOrden = [
   validatorHandler(getDetalleOrdenParamsSchema, "params"),
   validatorHandler(updateDetalleOrdenSchema, "body"),
   async (req, res) => {
-    const { id } = req.params;
-    const {
-      numero_producto,
-      cantidad,
-      precio_unitario,
-      personalizacion,
-      archivo,
-    } = req.body;
-
     try {
-      // Verificar que el producto exista
-      const producto = await productoSchema.findOne({ numero_producto });
-      if (!producto) {
-        return res.status(404).json({ message: "Producto no encontrado" });
+      const { productos, total, personalizacion, archivo } = req.body;
+
+      // Validaciones básicas
+      if (productos && (!Array.isArray(productos) || productos.length === 0)) {
+        return res.status(400).json({
+          success: false,
+          message: "Los productos deben ser un array con al menos un elemento",
+          code: "PRODUCTOS_INVALIDOS"
+        });
       }
 
-      const actualizarDetalle = await detalleOrdenSchema.findByIdAndUpdate(
-        id,
+      // Buscar y actualizar
+      const detalleActualizado = await detalleOrdenSchema.findByIdAndUpdate(
+        req.params.id,
         {
-          numero_producto,
-          producto_nombre: producto.nombre, // Actualizar nombre del producto
-          categoria_nombre: producto.categoria, // Actualizar nombre de la categoría
-          cantidad,
-          precio_unitario,
+          productos,
+          total,
           personalizacion,
-          archivo,
+          archivo
         },
-        { new: true }
+        { new: true, runValidators: true }
       );
 
-      if (!actualizarDetalle) {
-        return res.status(404).json({ message: "Detalle de orden no encontrado" });
+      if (!detalleActualizado) {
+        return res.status(404).json({
+          success: false,
+          message: "Detalle de orden no encontrado",
+          code: "DETALLE_NO_ENCONTRADO"
+        });
       }
 
-      res.status(200).json(actualizarDetalle);
+      res.json({
+        success: true,
+        message: "Detalle actualizado correctamente",
+        data: detalleActualizado,
+        code: "DETALLE_ACTUALIZADO"
+      });
+
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      console.error("Error al actualizar detalle:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error al actualizar detalle",
+        error: error.message,
+        code: "ERROR_ACTUALIZAR_DETALLE"
+      });
     }
-  },
+  }
 ];
 
-// Borrar detalle de orden
 export const borrarDetalleOrden = [
   validatorHandler(deleteDetalleOrdenSchema, "params"),
   async (req, res) => {
-    const { id } = req.params;
     try {
-      const result = await detalleOrdenSchema.findByIdAndDelete(id);
-      if (!result) {
-        return res.status(404).json({ message: "Detalle de orden no encontrado" });
+      const detalleEliminado = await detalleOrdenSchema.findByIdAndDelete(req.params.id);
+
+      if (!detalleEliminado) {
+        return res.status(404).json({
+          success: false,
+          message: "Detalle de orden no encontrado",
+          code: "DETALLE_NO_ENCONTRADO"
+        });
       }
-      res.status(200).json({ message: "Detalle de orden eliminado correctamente" });
+
+      res.json({
+        success: true,
+        message: "Detalle eliminado correctamente",
+        data: detalleEliminado,
+        code: "DETALLE_ELIMINADO"
+      });
+
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      console.error("Error al eliminar detalle:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error al eliminar detalle",
+        error: error.message,
+        code: "ERROR_ELIMINAR_DETALLE"
+      });
     }
-  },
+  }
 ];

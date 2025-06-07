@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-// Validación para el campo "nombre"
+// Validación para "nombre"
 const nombre = Joi.string()
   .min(3)
   .max(180)
@@ -13,7 +13,7 @@ const nombre = Joi.string()
     "any.required": "El nombre es un campo requerido.",
   });
 
-// Validación para el campo "descripcion"
+// Validación para "descripcion"
 const descripcion = Joi.string()
   .min(5)
   .max(500)
@@ -26,7 +26,7 @@ const descripcion = Joi.string()
     "any.required": "La descripción es un campo requerido.",
   });
 
-// Validación para el campo "precio"
+// Validación para "precio"
 const precio = Joi.number()
   .min(0)
   .required()
@@ -36,7 +36,7 @@ const precio = Joi.number()
     "any.required": "El precio es un campo requerido.",
   });
 
-// Validación para el campo "categoria"
+// Validación para "categoria"
 const categoria = Joi.string()
   .required()
   .messages({
@@ -45,7 +45,7 @@ const categoria = Joi.string()
     "any.required": "La categoría es un campo requerido.",
   });
 
-// Validación para el campo "cantidad_inicial"
+// Validación para "cantidad_inicial"
 const cantidad_inicial = Joi.number()
   .min(0)
   .required()
@@ -55,7 +55,7 @@ const cantidad_inicial = Joi.number()
     "any.required": "La cantidad inicial es un campo requerido.",
   });
 
-// Validación para el campo "stock_min"
+// Validación para "stock_min"
 const stock_min = Joi.number()
   .min(10)
   .required()
@@ -65,7 +65,7 @@ const stock_min = Joi.number()
     "any.required": "El stock mínimo es un campo requerido.",
   });
 
-// Validación para el campo "stock_max"
+// Validación para "stock_max"
 const stock_max = Joi.number()
   .max(100)
   .required()
@@ -76,7 +76,7 @@ const stock_max = Joi.number()
   });
 
   const numero_producto = Joi.number()
-  .optional()  // Hacerlo opcional para la creación
+  .optional()  
   .messages({
     "number.base": "El número de producto debe ser un valor numérico.",
     "any.required": "El número de producto es requerido."
@@ -90,7 +90,7 @@ export const createProductoSchema = Joi.object({
   cantidad_inicial,
   stock_min,
   stock_max,
-  numero_producto: numero_producto.optional(), // Hacerlo opcional para la creación
+  numero_producto: numero_producto.optional(), 
 });
 
 export const updateProductoSchema = Joi.object({
@@ -101,11 +101,11 @@ export const updateProductoSchema = Joi.object({
   cantidad_inicial,
   stock_min,
   stock_max,
-  numero_producto: numero_producto.required(), // Requerido solo cuando se actualiza
+  numero_producto: numero_producto.required(), 
 });
 
 
-// Esquema de validación para obtener un producto por ID (parámetros)
+// Esquema de validación para obtener un producto por ID
 export const getProductoParamsSchema = Joi.object({
   id: Joi.string()
     .pattern(/^[0-9a-fA-F]{24}$/)
@@ -116,7 +116,7 @@ export const getProductoParamsSchema = Joi.object({
     }),
 });
 
-// Esquema de validación para borrar un producto (parámetros)
+// Esquema de validación para borrar un producto 
 export const deleteProductoSchema = Joi.object({
   id: Joi.string()
     .pattern(/^[0-9a-fA-F]{24}$/)

@@ -1,42 +1,17 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const ordenesSchema = new mongoose.Schema({
-  cliente_correo: {
-    type: String,
-    required: true,
-    validate: {
-      validator: function (v) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      },
-      message: (props) => `${props.value} no es un correo válido.`,
-    },
-  },
-  fecha: {
-    type: Date,
-    required: true,
-    default: Date.now,
-  },
-  estado: {
-    type: String,
-    enum: ["pendiente", "procesada", "completada", "enviado"],
-    required: true,
-  },
-  total: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  numero_orden: {
-    type: Number,
-    required: true,
-    unique: true,
-  },
-  detalles: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "DetalleOrden", // Relación con DetalleOrden
-    },
-  ],
-});
-
-export default mongoose.model("Orden", ordenesSchema);
+const ordenSchema = new mongoose.Schema({
+  cliente_correo: { type: String, required: true },
+  estado: { type: String, required: true },
+  detalles: [{
+    producto_id: { type: mongoose.Schema.Types.ObjectId, required: true },
+    producto_nombre: { type: String, required: true },
+    categoria_nombre: { type: String, required: true },
+    cantidad: { type: Number, required: true },
+    precio_unitario: { type: Number, required: true }
+  }],
+  total: { type: Number, required: true }, // Asegúrate que esté como required
+  numero_orden: { type: String, required: true, unique: true },
+  fecha: { type: Date, required: true }
+}, { timestamps: true });
+export default mongoose.model('Orden', ordenSchema);

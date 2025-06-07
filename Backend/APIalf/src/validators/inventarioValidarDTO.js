@@ -1,8 +1,8 @@
 import Joi from 'joi';
 
-// Validaciones comunes para los campos del inventario
+
 const producto = Joi.string()
-  .min(1)  // El nombre del producto debe tener al menos un carácter
+  .min(1)  
   .required()
   .messages({
     "string.base": "El nombre del producto debe ser un texto.",
@@ -12,7 +12,7 @@ const producto = Joi.string()
 
 const stock = Joi.number()
   .integer()
-  .min(0)  // El stock no puede ser negativo
+  .min(0)  
   .required()
   .messages({
     "number.base": "El stock debe ser un número.",
@@ -23,7 +23,7 @@ const stock = Joi.number()
 
 const stock_min = Joi.number()
   .integer()
-  .min(0)  // El stock mínimo no puede ser negativo
+  .min(0)  
   .required()
   .messages({
     "number.base": "El stock mínimo debe ser un número.",
@@ -34,7 +34,7 @@ const stock_min = Joi.number()
 
 const stock_max = Joi.number()
   .integer()
-  .min(0)  // El stock máximo no puede ser negativo
+  .min(0)  
   .required()
   .messages({
     "number.base": "El stock máximo debe ser un número.",
@@ -43,12 +43,12 @@ const stock_max = Joi.number()
     "any.required": "El stock máximo es un campo requerido."
   });
 
-// Esquema de validación para los parámetros de la URL (por ejemplo, el id del inventario)
+
 export const getInventarioParamsSchema = Joi.object({
-  id: Joi.string().required()  // El nombre del producto es obligatorio
+  id: Joi.string().required()  
 });
 
-// Esquema para crear un inventario
+
 export const createInventarioSchema = Joi.object({
   producto: producto,
   stock: stock,
@@ -56,7 +56,7 @@ export const createInventarioSchema = Joi.object({
   stock_max: stock_max,
 });
 
-// Esquema para actualizar un inventario
+
 export const updateInventarioSchema = Joi.object({
   producto: producto.optional(),
   stock: stock.optional(),
@@ -64,12 +64,12 @@ export const updateInventarioSchema = Joi.object({
   stock_max: stock_max.optional(),
 });
 
-// Esquema para obtener un inventario por nombre del producto
+
 export const getInventarioSchema = Joi.object({
-  id: Joi.string().required()  // El nombre del producto es obligatorio
+  id: Joi.string().required()  
 });
 
 // Esquema para borrar un inventario
 export const deleteInventarioSchema = Joi.object({
-  id: Joi.string().required()  // El nombre del producto es obligatorio
+  id: Joi.string().required()  
 });

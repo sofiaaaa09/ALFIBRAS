@@ -1,405 +1,613 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
-export default function OrdenForm() {
-  const [clienteEmail, setClienteEmail] = useState("");
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
-  const [estado, setEstado] = useState("pendiente");
-  const [detallesSeleccionados, setDetallesSeleccionados] = useState([]);
-  const [detallesDisponibles, setDetallesDisponibles] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [ordenes, setOrdenes] = useState([]);
+const MySwal = withReactContent(Swal);
+
+function Ordenes() {
+  // Estados principales
+  const [detallesOrden, setDetallesOrden] = useState([]);
   const [clientes, setClientes] = useState([]);
-  const [error, setError] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-  const [ordenId, setOrdenId] = useState(null);
+  const [ordenSeleccionada, setOrdenSeleccionada] = useState(null);
+  const [nuevaOrden, setNuevaOrden] = useState({
+    cliente_correo: '',
+    estado: 'pendiente',
+    detalles: [],
+    total: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [creandoOrden, setCreandoOrden] = useState(false);
 
-  // Cargar los datos de clientes, detalles y órdenes
+  // Cargar datos iniciales
   useEffect(() => {
-    obtenerOrdenes();
-    obtenerDetalles();
-    obtenerClientes();
-  }, []);
+    const cargarDatos = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        
+        // Cargar detalles de orden y clientes en paralelo
+        const [detallesResponse, clientesResponse] = await Promise.all([
+          axios.get('http://localhost:9001/api/detalle_ordenes', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:9001/api/clientes', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
 
-  // Obtener las órdenes filtradas para mostrar solo las no enviadas
-  const obtenerOrdenes = async () => {
-    try {
-      const response = await axios.get("http://localhost:9001/api/ordenes");
-      const ordenesFiltradas = response.data.filter(orden => orden.estado !== "enviado");
-      setOrdenes(ordenesFiltradas);
-    } catch (err) {
-      console.error("Error al obtener órdenes:", err);
-    }
-  };
+        // Procesar detalles de orden
+        const detallesData = detallesResponse.data?.success 
+          ? detallesResponse.data.data 
+          : detallesResponse.data || [];
+        setDetallesOrden(detallesData);
 
-  // Obtener los detalles de productos disponibles
-  const obtenerDetalles = async () => {
-    try {
-      const response = await axios.get("http://localhost:9001/api/detalle_ordenes");
-      setDetallesDisponibles(response.data);
-    } catch (err) {
-      console.error("Error al obtener detalles de órdenes:", err);
-    }
-  };
+        // Procesar y normalizar datos de clientes
+        let clientesData = [];
+        if (Array.isArray(clientesResponse.data)) {
+          clientesData = clientesResponse.data;
+        } else if (clientesResponse.data?.data) {
+          clientesData = clientesResponse.data.data;
+        }
 
-  // Obtener los clientes
-  const obtenerClientes = async () => {
-    try {
-      const response = await axios.get("http://localhost:9001/api/clientes");
-      setClientes(response.data);
-    } catch (err) {
-      console.error("Error al obtener clientes:", err);
-    }
-  };
+        const clientesValidos = clientesData
+          .map(cliente => ({
+            ...cliente,
+            correo: cliente.correo || cliente.email || '',
+            nombre: cliente.nombre || cliente.nombre_completo || 'Cliente sin nombre'
+          }))
+          .filter(cliente => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cliente.correo));
 
-  // Agregar un detalle seleccionado a la orden
-  const agregarDetalle = (detalle) => {
-    if (detallesSeleccionados.some((d) => d._id === detalle._id)) return;
-    setDetallesSeleccionados((prev) => [...prev, detalle]);
-  };
+        setClientes(clientesValidos);
 
-  // Eliminar un detalle seleccionado
-  const eliminarDetalle = (detalleId) => {
-    setDetallesSeleccionados((prev) => prev.filter((d) => d._id !== detalleId));
-  };
-
-  // Calcular total de la orden
-  const calcularTotal = () => {
-    return detallesSeleccionados.reduce((total, detalle) => 
-      total + (detalle.cantidad * detalle.precio_unitario), 0);
-  };
-
-  // Manejo de envío de formulario
-  const manejarEnvioFormulario = async (event) => {
-    event.preventDefault();
-
-    if (!clienteEmail || !fecha || !estado || detallesSeleccionados.length === 0) {
-      setError("Complete todos los campos y seleccione al menos un detalle.");
-      return;
-    }
-
-    const totalCalculado = calcularTotal();
-
-    const datosOrden = {
-      cliente_correo: clienteEmail,
-      estado,
-      fecha,
-      detalles: detallesSeleccionados.map((detalle) => detalle._id),
+      } catch (err) {
+        console.error('Error al cargar datos:', err);
+        setError(err.message);
+        MySwal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los datos',
+          icon: 'error'
+        });
+      } finally {
+        setLoading(false);
+      }
     };
 
+    cargarDatos();
+  }, []);
+
+  // Seleccionar detalle de orden
+  const seleccionarDetalle = (detalle) => {
+    setOrdenSeleccionada(detalle);
+    
+    // Calcular total
+    const total = Array.isArray(detalle.productos) 
+      ? detalle.productos.reduce((sum, p) => sum + (p.cantidad * p.precio_unitario), 0)
+      : (detalle.cantidad * detalle.precio_unitario);
+
+    setNuevaOrden({
+      cliente_correo: '',
+      estado: 'pendiente',
+      detalles: Array.isArray(detalle.productos) 
+        ? detalle.productos.map(p => ({ 
+            producto_id: p._id || p.producto_id,
+            producto_nombre: p.producto_nombre,
+            categoria_nombre: p.categoria_nombre,
+            cantidad: p.cantidad,
+            precio_unitario: p.precio_unitario
+          }))
+        : [{
+            producto_id: detalle._id,
+            producto_nombre: detalle.producto_nombre,
+            categoria_nombre: detalle.categoria_nombre,
+            cantidad: detalle.cantidad,
+            precio_unitario: detalle.precio_unitario
+          }],
+      total
+    });
+  };
+
+  // Función para generar número de orden
+  const generarNumeroOrden = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const timestamp = now.getTime();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    
+    return `ORD-${year}-${month}-${day}-${timestamp}-${random}`;
+  };
+
+  const crearNuevaOrden = async () => {
     try {
-      if (isEditing) {
-        await axios.put(`http://localhost:9001/api/ordenes/${ordenId}`, datosOrden);
-        alert("Orden actualizada correctamente");
+      // Validaciones
+      if (!nuevaOrden.cliente_correo) {
+        throw new Error('Debe seleccionar un cliente');
+      }
+  
+      if (nuevaOrden.detalles.length === 0) {
+        throw new Error('La orden debe contener al menos un producto');
+      }
+  
+      setCreandoOrden(true);
+      const token = localStorage.getItem('token');
+  
+      // Calcular el total correctamente
+      const totalCalculado = nuevaOrden.detalles.reduce(
+        (sum, item) => sum + (item.cantidad * item.precio_unitario),
+        0
+      );
+  
+      // Preparar datos para la API
+      const datosOrden = {
+        cliente_correo: nuevaOrden.cliente_correo,
+        estado: nuevaOrden.estado,
+        detalles: nuevaOrden.detalles.map(item => ({
+          producto_id: item.producto_id,
+          producto_nombre: item.producto_nombre,
+          categoria_nombre: item.categoria_nombre,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario
+        })),
+        total: totalCalculado, // Enviamos el total calculado
+        numero_orden: generarNumeroOrden(),
+        fecha: new Date().toISOString()
+      };
+  
+      console.log('Datos a enviar:', JSON.stringify(datosOrden, null, 2));
+  
+      // Enviar a la API
+      const response = await axios.post('http://localhost:9001/api/ordenes', datosOrden, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      // Manejar respuesta exitosa
+      if (response.data.success) {
+        MySwal.fire({
+          title: '¡Éxito!',
+          text: `Orden ${response.data.numero_orden} creada correctamente`,
+          icon: 'success'
+        });
+  
+        // Resetear formulario
+        setNuevaOrden({
+          cliente_correo: '',
+          estado: 'pendiente',
+          detalles: [],
+          total: 0
+        });
       } else {
-        await axios.post("http://localhost:9001/api/ordenes", datosOrden);
-        alert("Orden creada correctamente");
+        throw new Error(response.data.message || 'Error al crear la orden');
       }
-      limpiarFormulario();
-      obtenerOrdenes();
-    } catch (err) {
-      console.error("Error al enviar datos:", err.response?.data || err.message);
-      setError(err.response?.data?.message || "Error al registrar la orden.");
+  
+    } catch (error) {
+      console.error('Error completo:', error);
+      console.error('Respuesta del servidor:', error.response?.data);
+      
+      let mensajeError = 'Error al crear la orden';
+      if (error.response?.data) {
+        // Intentar extraer el mensaje de error del HTML
+        const errorMatch = error.response.data.match(/<pre>([^<]+)<\/pre>/);
+        mensajeError = errorMatch ? errorMatch[1] : JSON.stringify(error.response.data);
+      } else {
+        mensajeError = error.message;
+      }
+  
+      MySwal.fire({
+        title: 'Error',
+        text: mensajeError,
+        icon: 'error'
+      });
+    } finally {
+      setCreandoOrden(false);
     }
   };
 
-  // Limpiar el formulario después de registrar o editar la orden
-  const limpiarFormulario = () => {
-    setClienteEmail("");
-    setEstado("pendiente");
-    setFecha(new Date().toISOString().slice(0, 10));
-    setDetallesSeleccionados([]);
-    setIsEditing(false);
-    setOrdenId(null);
-  };
 
-  // Eliminar una orden
-  const eliminarOrden = async (id) => {
-    if (window.confirm("¿Estás seguro de eliminar esta orden?")) {
-      try {
-        await axios.delete(`http://localhost:9001/api/ordenes/${id}`);
-        alert("Orden eliminada correctamente");
-        obtenerOrdenes();
-      } catch (err) {
-        console.error("Error al eliminar la orden:", err);
-        alert("Error al eliminar la orden");
-      }
-    }
-  };
+  if (loading) return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '50vh',
+      gap: '1rem'
+    }}>
+      <div style={{
+        width: '3rem',
+        height: '3rem',
+        border: '5px solid rgba(44, 62, 80, 0.2)',
+        borderRadius: '50%',
+        borderTopColor: '#2C3E50',
+        animation: 'spin 1s linear infinite'
+      }}></div>
+      <p>Cargando datos...</p>
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '50vh',
+      gap: '1rem',
+      color: '#dc3545'
+    }}>
+      <div style={{
+        width: '3rem',
+        height: '3rem',
+        background: '#dc3545',
+        color: 'white',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '1.5rem',
+        fontWeight: 'bold'
+      }}>!</div>
+      <p>Error: {error}</p>
+      <button 
+        onClick={() => window.location.reload()}
+        style={{
+          padding: '0.5rem 1rem',
+          background: '#dc3545',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer'
+        }}
+      >
+        Reintentar
+      </button>
+    </div>
+  );
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.header}>{isEditing ? "Modificar Orden" : "Registrar Orden"}</h2>
-        <form onSubmit={manejarEnvioFormulario} style={styles.form}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Correo del Cliente:</label>
-            <select
-              style={styles.input}
-              value={clienteEmail}
-              onChange={(e) => setClienteEmail(e.target.value)}
-              required
-            >
-              <option value="">Seleccione un cliente</option>
-              {clientes.map((cliente) => (
-                <option key={cliente.email} value={cliente.email}>
-                  {cliente.email} - {cliente.nombre}
-                </option>
+    <div style={{
+      maxWidth: '1400px',
+      margin: '0 auto',
+      padding: '2rem'
+    }}>
+      <h1 style={{
+        textAlign: 'center',
+        marginTop: '3rem',
+        marginBottom: '3rem',
+        color: '#2C3E50',
+        fontWeight: '600'
+      }}>Gestión de Órdenes</h1>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '2rem'
+      }}>
+        {/* Sección de detalles disponibles */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '1.5rem',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          height: 'calc(100vh - 200px)',
+          overflowY: 'auto'
+        }}>
+          <h2 style={{
+            fontSize: '1.5rem',
+            marginBottom: '1.5rem',
+            color: '#2C3E50',
+            paddingBottom: '0.5rem',
+            borderBottom: '2px solid #dee2e6'
+          }}>Detalles Disponibles</h2>
+          
+          {detallesOrden.length > 0 ? (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '1.5rem'
+            }}>
+              {detallesOrden.map((detalle) => (
+                <div 
+                  key={detalle._id} 
+                  style={{
+                    background: 'white',
+                    border: ordenSeleccionada?._id === detalle._id ? '2px solid #2C3E50' : '1px solid #dee2e6',
+                    borderRadius: '10px',
+                    padding: '1.25rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    backgroundColor: ordenSeleccionada?._id === detalle._id ? 'rgba(44, 62, 80, 0.05)' : 'white'
+                  }}
+                  onClick={() => seleccionarDetalle(detalle)}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1rem',
+                    paddingBottom: '0.5rem',
+                    borderBottom: '1px solid #dee2e6'
+                  }}>
+                    <span style={{
+                      fontWeight: '600',
+                      color: '#2C3E50'
+                    }}>Detalle #{detalle.numero_orden}</span>
+                    <span style={{
+                      background: '#2C3E50',
+                      color: 'white',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '20px',
+                      fontSize: '0.75rem',
+                      fontWeight: '500'
+                    }}>
+                      {Array.isArray(detalle.productos) ? detalle.productos.length : 1} producto(s)
+                    </span>
+                  </div>
+                  
+                  <div style={{ marginBottom: '1rem' }}>
+                    {Array.isArray(detalle.productos) ? (
+                      <ul style={{ listStyle: 'none', padding: 0 }}>
+                        {detalle.productos.slice(0, 3).map((producto, idx) => (
+                          <li key={idx} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            padding: '0.5rem 0',
+                            borderBottom: '1px dashed #dee2e6'
+                          }}>
+                            <span style={{ fontWeight: '500' }}>{producto.producto_nombre}</span>
+                            <span style={{ color: '#6c757d', fontSize: '0.9rem' }}>
+                              {producto.cantidad} x ${producto.precio_unitario?.toLocaleString()}
+                            </span>
+                          </li>
+                        ))}
+                        {detalle.productos.length > 3 && (
+                          <li style={{
+                            textAlign: 'center',
+                            color: '#2C3E50',
+                            fontStyle: 'italic',
+                            marginTop: '0.5rem'
+                          }}>
+                            +{detalle.productos.length - 3} más...
+                          </li>
+                        )}
+                      </ul>
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '0.5rem 0'
+                      }}>
+                        <span style={{ fontWeight: '500' }}>{detalle.producto_nombre}</span>
+                        <span style={{ color: '#6c757d', fontSize: '0.9rem' }}>
+                          {detalle.cantidad} x ${detalle.precio_unitario?.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div style={{ textAlign: 'right', fontWeight: '600', color: '#2C3E50' }}>
+                    Total: ${Array.isArray(detalle.productos) 
+                      ? detalle.productos.reduce((sum, p) => sum + (p.cantidad * p.precio_unitario), 0)?.toLocaleString()
+                      : (detalle.cantidad * detalle.precio_unitario)?.toLocaleString()}
+                  </div>
+                </div>
               ))}
-            </select>
-          </div>
+            </div>
+          ) : (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              color: '#6c757d',
+              textAlign: 'center'
+            }}>
+              <p>No hay detalles de orden disponibles</p>
+            </div>
+          )}
+        </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Estado:</label>
-            <select
-              style={styles.select}
-              value={estado}
-              onChange={(e) => setEstado(e.target.value)}
-              required
-            >
-              <option value="pendiente">Pendiente</option>
-              <option value="procesada">Procesada</option>
-              <option value="completada">Completada</option>
-              <option value="enviado">Enviado</option>
-            </select>
-          </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Fecha:</label>
-            <input
-              type="date"
-              style={styles.input}
-              value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
-              required
-            />
-          </div>
-
-          <div style={styles.detailsContainer}>
-            <h3>Detalles Disponibles</h3>
-            <ul style={styles.detailsList}>
-              {detallesDisponibles.map((detalle) => (
-                <li key={detalle._id} style={styles.detailsItem}>
-                  {detalle.producto_nombre} - {detalle.cantidad} unidades - ${detalle.precio_unitario}
-                  <button 
-                    type="button"
-                    style={styles.addButton} 
-                    onClick={() => agregarDetalle(detalle)}
-                  >
-                    Agregar
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div style={styles.detailsContainer}>
-            <h3>Detalles Seleccionados</h3>
-            <ul style={styles.detailsList}>
-              {detallesSeleccionados.map((detalle) => (
-                <li key={detalle._id} style={styles.detailsItem}>
-                  {detalle.producto_nombre} - {detalle.cantidad} unidades - ${detalle.precio_unitario}
-                  <button 
-                    type="button"
-                    style={styles.removeButton} 
-                    onClick={() => eliminarDetalle(detalle._id)}
-                  >
-                    Eliminar
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div style={styles.totalContainer}>
-            <h4>Total: ${calcularTotal().toFixed(2)}</h4>
-          </div>
-
-          {error && <div style={styles.error}>{error}</div>}
-
-          <button type="submit" style={styles.submitButton}>
-            {isEditing ? "Actualizar Orden" : "Guardar Orden"}
-          </button>
-        </form>
-      </div>
-
-      <div style={styles.card}>
-        <h3 style={styles.header}>Órdenes Registradas</h3>
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th># Orden</th>
-                <th>Correo</th>
-                <th>Fecha</th>
-                <th>Estado</th>
-                <th>Total</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ordenes.map((orden) => (
-                <tr key={orden._id} style={styles.tableRow}>
-                  <td>{orden.numero_orden}</td>
-                  <td>{orden.cliente_correo}</td>
-                  <td>{orden.fecha.slice(0, 10)}</td>
-                  <td>{orden.estado}</td>
-                  <td>${orden.total.toFixed(2)}</td>
-                  <td>
-                    <button style={styles.deleteButton} onClick={() => eliminarOrden(orden._id)}>
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Sección de creación de orden */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '1.5rem',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          height: 'calc(100vh - 200px)',
+          overflowY: 'auto'
+        }}>
+          <h2 style={{
+            fontSize: '1.5rem',
+            marginBottom: '1.5rem',
+            color: '#2C3E50',
+            paddingBottom: '0.5rem',
+            borderBottom: '2px solid #dee2e6'
+          }}>
+            {ordenSeleccionada ? `Crear Orden #${ordenSeleccionada.numero_orden}` : 'Seleccione un detalle'}
+          </h2>
+          
+          {ordenSeleccionada ? (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem'
+            }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+              }}>
+                <label style={{
+                  fontWeight: '500',
+                  color: '#6c757d'
+                }}>Cliente:</label>
+                <select
+                  value={nuevaOrden.cliente_correo}
+                  onChange={(e) => setNuevaOrden({...nuevaOrden, cliente_correo: e.target.value})}
+                  style={{
+                    padding: '0.75rem',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                  required
+                >
+                  <option value="">Seleccione un cliente</option>
+                  {clientes.map(cliente => (
+                    <option key={cliente._id} value={cliente.correo}>
+                      {cliente.nombre} ({cliente.correo})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+              }}>
+                <label style={{
+                  fontWeight: '500',
+                  color: '#6c757d'
+                }}>Estado:</label>
+                <select
+                  value={nuevaOrden.estado}
+                  onChange={(e) => setNuevaOrden({...nuevaOrden, estado: e.target.value})}
+                  style={{
+                    padding: '0.75rem',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <option value="pendiente">Pendiente</option>
+                  <option value="completada">Completada</option>
+                  <option value="cancelada">Cancelada</option>
+                </select>
+              </div>
+              
+              <div style={{ marginTop: '1rem' }}>
+                <h3 style={{
+                  marginBottom: '1rem',
+                  color: '#6c757d',
+                  fontSize: '1.1rem'
+                }}>Productos en la Orden</h3>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  padding: '0.5rem',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '8px'
+                }}>
+                  {nuevaOrden.detalles.map((producto, index) => (
+                    <div key={index} style={{
+                      background: '#f8f9fa',
+                      borderRadius: '8px',
+                      padding: '1rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.25rem'
+                      }}>
+                        <span style={{ fontWeight: '500' }}>{producto.producto_nombre}</span>
+                        <span style={{
+                          fontSize: '0.85rem',
+                          color: '#6c757d'
+                        }}>{producto.categoria_nombre}</span>
+                      </div>
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-end',
+                        gap: '0.25rem'
+                      }}>
+                        <span style={{
+                          fontSize: '0.9rem',
+                          color: '#6c757d'
+                        }}>{producto.cantidad} x ${producto.precio_unitario?.toLocaleString()}</span>
+                        <span style={{ fontWeight: '500' }}>
+                          ${(producto.cantidad * producto.precio_unitario)?.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1rem',
+                background: '#f8f9fa',
+                borderRadius: '8px',
+                marginTop: '1rem',
+                fontSize: '1.2rem',
+                fontWeight: '500'
+              }}>
+                <span>Total:</span>
+                <span style={{
+                  color: '#2C3E50',
+                  fontWeight: '600'
+                }}>${nuevaOrden.total?.toLocaleString()}</span>
+              </div>
+              
+              <button 
+                onClick={crearNuevaOrden}
+                disabled={!nuevaOrden.cliente_correo || creandoOrden}
+                style={{
+                  background: '#2C3E50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  fontSize: '1rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  marginTop: '1.5rem',
+                  opacity: !nuevaOrden.cliente_correo || creandoOrden ? '0.7' : '1'
+                }}
+              >
+                {creandoOrden ? 'Creando Orden...' : 'Registrar Orden'}
+              </button>
+            </div>
+          ) : (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              gap: '1rem',
+              color: '#6c757d',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '3rem', opacity: '0.5' }}>🛒</div>
+              <p>Seleccione un detalle de orden para crear una nueva orden</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-
-const styles = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    minHeight: "100vh",
-    backgroundColor: "#f8f9fa",
-    padding: "20px",
-    marginTop: "80px", // Añade margen superior para evitar solapamiento con el navbar
-  },
-  card: {
-    width: "100%",
-    maxWidth: "900px",
-    backgroundColor: "#fff",
-    borderRadius: "10px",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-    marginBottom: "20px",
-    padding: "20px",
-  },
-  header: {
-    fontSize: "1.5rem",
-    fontWeight: "bold",
-    color: "#fff", 
-    textAlign: "center",
-    marginBottom: "20px",
-    backgroundColor: "#2C3E50", 
-    padding: "10px", 
-    borderRadius: "5px", 
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-  },
-  formGroup: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  label: {
-    fontWeight: "bold",
-    color: "#555",
-    marginBottom: "8px",
-  },
-  input: {
-    padding: "10px",
-    borderRadius: "5px",
-    border: "1px solid #ddd",
-    fontSize: "1rem",
-  },
-  select: {
-    padding: "10px",
-    borderRadius: "5px",
-    border: "1px solid #ddd",
-    fontSize: "1rem",
-  },
-  detailsContainer: {
-    marginTop: "20px",
-  },
-  detailsList: {
-    listStyle: "none",
-    padding: 0,
-    marginTop: "10px",
-  },
-  detailsItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "10px",
-    borderBottom: "1px solid #ddd",
-    fontSize: "1rem",
-  },
-  addButton: {
-    backgroundColor: "#28a745",
-    color: "#fff",
-    padding: "5px 10px",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-    transition: "background-color 0.3s",
-  },
-  removeButton: {
-    backgroundColor: "#dc3545",
-    color: "#fff",
-    padding: "5px 10px",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-    transition: "background-color 0.3s",
-  },
-  totalContainer: {
-    textAlign: "right",
-    marginTop: "20px",
-    fontSize: "1.2rem",
-    fontWeight: "bold",
-  },
-  error: {
-    color: "#dc3545",
-    fontWeight: "bold",
-    marginTop: "10px",
-  },
-  submitButton: {
-    backgroundColor: "#007bff",
-    color: "#fff",
-    padding: "10px",
-    borderRadius: "5px",
-    border: "none",
-    fontSize: "1rem",
-    cursor: "pointer",
-    transition: "background-color 0.3s",
-    marginTop: "10px",
-  },
-  tableContainer: {
-    overflowX: "auto",
-    marginTop: "20px",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  tableHeader: {
-    backgroundColor: "#007bff",
-    color: "#fff",
-    fontWeight: "bold",
-    textAlign: "left",
-  },
-  tableRow: {
-    borderBottom: "1px solid #ddd",
-  },
-  tableCell: {
-    padding: "10px",
-    textAlign: "left",
-  },
-  deleteButton: {
-    backgroundColor: "#dc3545",
-    color: "#fff",
-    padding: "5px 10px",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-    transition: "background-color 0.3s",
-  },
-};
+export default Ordenes;

@@ -6,6 +6,13 @@ import {
   actualizarCategoria,
   borrarCategoria,
 } from "../controllers/controladorcategoria.js";
+import {
+  createCategoriaSchema,
+  updateCategoriaSchema,
+  getCategoriaParamsSchema,
+} from "../validators/categoriaValidarDTO.js";
+import { validatorHandler } from "../midleware/validator.handler.js";
+import { verificarToken, soloAdmin } from "../midleware/auth.js";
 
 const routes = express.Router();
 
@@ -16,31 +23,23 @@ const routes = express.Router();
  *     Categoria:
  *       type: object
  *       properties:
- *         nombre_categoria:
+ *         nombre:
  *           type: string
- *           description: Nombre de la categoría
  *         descripcion:
  *           type: string
- *           description: Descripción de la categoría
  *         estado:
  *           type: string
  *           enum: [activo, inactivo]
- *           description: Estado de la categoría
  *       required:
- *         - nombre_categoria
- *         - descripcion
+ *         - nombre
  *         - estado
- *       example:
- *         nombre_categoria: "Puertas"
- *         descripcion: "Categoría dedicada a productos puertas"
- *         estado: "activo"
  */
 
 /**
  * @swagger
  * /api/categorias:
  *   post:
- *     summary: Crea una nueva categoría
+ *     summary: Crear una nueva categoría
  *     tags: [Categorías]
  *     security:
  *       - bearerAuth: []
@@ -51,73 +50,75 @@ const routes = express.Router();
  *           schema:
  *             $ref: '#/components/schemas/Categoria'
  *     responses:
- *       200:
+ *       201:
  *         description: Categoría creada exitosamente
+ *       400:
+ *         description: Datos inválidos
  */
-routes.post("/", crearCategoria);
+routes.post(
+  "/",
+  verificarToken,
+  soloAdmin,
+  validatorHandler(createCategoriaSchema, "body"),
+  crearCategoria
+);
 
 /**
  * @swagger
  * /api/categorias:
  *   get:
- *     summary: Obtiene todas las categorías
+ *     summary: Obtener todas las categorías
  *     tags: [Categorías]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de categorías
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Categoria'
  */
-routes.get("/", obtenerCategorias);
+routes.get("/", verificarToken, soloAdmin, obtenerCategorias);
 
 /**
  * @swagger
  * /api/categorias/{id}:
  *   get:
- *     summary: Obtiene una categoría por ID
+ *     summary: Obtener una categoría por ID
  *     tags: [Categorías]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la categoría
  *     responses:
  *       200:
- *         description: Información de la categoría obtenida
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Categoria'
+ *         description: Categoría encontrada
  *       404:
  *         description: Categoría no encontrada
  */
-routes.get("/:id", obtenerCategoriaPorId);
+routes.get(
+  "/:id",
+  verificarToken,
+  soloAdmin,
+  validatorHandler(getCategoriaParamsSchema, "params"),
+  obtenerCategoriaPorId
+);
 
 /**
  * @swagger
  * /api/categorias/{id}:
  *   put:
- *     summary: Actualiza una categoría por ID
+ *     summary: Actualizar una categoría por ID
  *     tags: [Categorías]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la categoría
  *     requestBody:
  *       required: true
  *       content:
@@ -126,33 +127,45 @@ routes.get("/:id", obtenerCategoriaPorId);
  *             $ref: '#/components/schemas/Categoria'
  *     responses:
  *       200:
- *         description: Categoría actualizada exitosamente
+ *         description: Categoría actualizada
  *       404:
  *         description: Categoría no encontrada
  */
-routes.put("/:id", actualizarCategoria);
+routes.put(
+  "/:id",
+  verificarToken,
+  soloAdmin,
+  validatorHandler(getCategoriaParamsSchema, "params"),
+  validatorHandler(updateCategoriaSchema, "body"),
+  actualizarCategoria
+);
 
 /**
  * @swagger
  * /api/categorias/{id}:
  *   delete:
- *     summary: Elimina una categoría por ID
+ *     summary: Eliminar una categoría por ID
  *     tags: [Categorías]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la categoría
  *     responses:
  *       200:
- *         description: Categoría eliminada exitosamente
+ *         description: Categoría eliminada
  *       404:
  *         description: Categoría no encontrada
  */
-routes.delete("/:id", borrarCategoria);
+routes.delete(
+  "/:id",
+  verificarToken,
+  soloAdmin,
+  validatorHandler(getCategoriaParamsSchema, "params"),
+  borrarCategoria
+);
 
 export default routes;

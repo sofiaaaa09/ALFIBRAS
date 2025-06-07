@@ -1,224 +1,278 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-export default function InventarioForm({ inventarioSelec }) {
-  const [productoId, setProductoId] = useState("");
-  const [stock, setStock] = useState(0);
-  const [stockMinimo, setStockMinimo] = useState(0);
-  const [stockMaximo, setStockMaximo] = useState(0);
-  const [id, setId] = useState("");
-  const [error, setError] = useState("");
-
-  const [isEditing, setIsEditing] = useState(false);
+export default function Inventario() {
+  const [productos, setProductos] = useState([]);
+  const [alertas, setAlertas] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (inventarioSelec) {
-      setProductoId(inventarioSelec.producto_id);
-      setStock(inventarioSelec.stock);
-      setStockMinimo(inventarioSelec.stock_minimo);
-      setStockMaximo(inventarioSelec.stock_maximo);
-      setId(inventarioSelec._id);
-      setIsEditing(true);
-    }
-  }, [inventarioSelec]);
+    fetchProductos();
+  }, []);
 
-  const agregarInventario = async (event) => {
-    event.preventDefault();
-    try {
-      await axios.post("http://localhost:9001/api/Inventario", {
-        producto_id: productoId,
-        stock: Number(stock),
-        stock_minimo: Number(stockMinimo),
-        stock_maximo: Number(stockMaximo),
-      });
-      setError("");
-      alert("Inventario registrado exitosamente.");
-    } catch (err) {
-      setError(err.response?.data?.message || "Ocurrió un error inesperado.");
-    }
+  const verificarStock = (productos) => {
+    const productosConStockBajo = productos.filter(
+      (producto) => producto.cantidad_inicial < producto.stock_min || producto.cantidad_inicial < 10
+    );
+    setAlertas(productosConStockBajo);
   };
 
-  const actualizarInventario = async (event) => {
-    event.preventDefault();
+  const fetchProductos = async () => {
     try {
-      await axios.put(`http://localhost:9001/api/Inventario/${id}`, {
-        producto_id: productoId,
-        stock: Number(stock),
-        stock_minimo: Number(stockMinimo),
-        stock_maximo: Number(stockMaximo),
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await axios.get("http://localhost:9001/api/productos", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      alert("Inventario actualizado correctamente.");
-    } catch (err) {
-      setError(err.response?.data?.message || "Ocurrió un error inesperado.");
+      
+      setProductos(response.data);
+      verificarStock(response.data);
+    } catch (error) {
+      console.error("Error al obtener productos", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.card}>
-        <div style={styles.cardHeader}>
-          {isEditing ? "Modificar Inventario" : "Registrar Inventario"}
+    <div style={styles.container}>
+      <h2 style={styles.title}>Inventario de Productos</h2>
+
+      {/* Alertas de stock bajo */}
+      {alertas.length > 0 && (
+        <div style={styles.alertContainer}>
+          <h3 style={styles.alertTitle}>
+            <i className="fas fa-exclamation-triangle" style={styles.alertIcon}></i> Productos con stock bajo
+          </h3>
+          <div style={styles.alertGrid}>
+            {alertas.map((producto) => (
+              <div key={producto._id} style={styles.alertItem}>
+                <span style={styles.alertProduct}>{producto.nombre}</span>
+                <span style={styles.alertStock}>
+                  Stock: {producto.cantidad_inicial} (Mínimo: {producto.stock_min || 10})
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={styles.cardBody}>
-          <form>
-            <fieldset style={styles.fieldset}>
-              <legend style={styles.legend}>
-                {isEditing ? "Modificar Inventario" : "Registrar Inventario"}
-              </legend>
-              <div style={styles.formGroup}>
-                <label htmlFor="txtProductoId" style={styles.label}>
-                  Producto ID
-                </label>
-                <input
-                  type="text"
-                  id="txtProductoId"
-                  style={styles.input}
-                  placeholder="ID del producto"
-                  onChange={(event) => setProductoId(event.target.value)}
-                  value={productoId}
-                />
+      )}
+
+      {isLoading ? (
+        <div style={styles.loadingContainer}>
+          <i className="fas fa-spinner fa-spin" style={styles.loadingIcon}></i>
+          <p>Cargando inventario...</p>
+        </div>
+      ) : (
+        <div style={styles.cardContainer}>
+          {productos.length > 0 ? (
+            productos.map((producto) => (
+              <div 
+                key={producto._id} 
+                style={{
+                  ...styles.card,
+                  borderLeft: `5px solid ${producto.cantidad_inicial < (producto.stock_min || 10) ? '#e74c3c' : '#2C3E50'}`
+                }}
+              >
+                <h3 style={styles.productName}>
+                  <i className="fas fa-box" style={styles.productIcon}></i> {producto.nombre}
+                </h3>
+                <p style={styles.category}>
+                  <i className="fas fa-tag" style={styles.categoryIcon}></i> {producto.categoria}
+                </p>
+                <div style={styles.stockContainer}>
+                  <p style={styles.stock}>
+                    <i className="fas fa-boxes" style={styles.stockIcon}></i> Stock: {producto.cantidad_inicial}
+                  </p>
+                  <p style={styles.price}>
+                    <i className="fas fa-dollar-sign" style={styles.priceIcon}></i> {producto.precio?.toLocaleString('es-CO')}
+                  </p>
+                </div>
+                {producto.cantidad_inicial < (producto.stock_min || 10) && (
+                  <div style={styles.lowStockBadge}>
+                    <i className="fas fa-exclamation-circle"></i> Stock bajo
+                  </div>
+                )}
               </div>
-              <div style={styles.formGroup}>
-                <label htmlFor="txtStock" style={styles.label}>
-                  Stock
-                </label>
-                <input
-                  type="number"
-                  id="txtStock"
-                  style={styles.input}
-                  placeholder="Cantidad en stock"
-                  onChange={(event) => setStock(event.target.value)}
-                  value={stock}
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label htmlFor="txtStockMinimo" style={styles.label}>
-                  Stock Mínimo
-                </label>
-                <input
-                  type="number"
-                  id="txtStockMinimo"
-                  style={styles.input}
-                  placeholder="Cantidad mínima en stock"
-                  onChange={(event) => setStockMinimo(event.target.value)}
-                  value={stockMinimo}
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label htmlFor="txtStockMaximo" style={styles.label}>
-                  Stock Máximo
-                </label>
-                <input
-                  type="number"
-                  id="txtStockMaximo"
-                  style={styles.input}
-                  placeholder="Cantidad máxima en stock"
-                  onChange={(event) => setStockMaximo(event.target.value)}
-                  value={stockMaximo}
-                />
-              </div>
-            </fieldset>
-          </form>
-          {error && (
-            <div style={styles.alert} role="alert">
-              {error}
+            ))
+          ) : (
+            <div style={styles.noProducts}>
+              <i className="fas fa-box-open" style={styles.noProductsIcon}></i>
+              <p>No hay productos en el inventario</p>
             </div>
           )}
         </div>
-        <div style={styles.cardFooter}>
-          {isEditing ? (
-            <button
-              type="button"
-              style={styles.button}
-              onClick={actualizarInventario}
-            >
-              Modificar
-            </button>
-          ) : (
-            <button
-              type="submit"
-              style={{ ...styles.button, backgroundColor: "#28a745" }}
-              onClick={agregarInventario}
-            >
-              Guardar Inventario
-            </button>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
 const styles = {
-  wrapper: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
+  container: {
+    padding: "2rem",
+    paddingTop: "5rem",
+    backgroundColor: "#f8f9fa",
     minHeight: "100vh",
-    backgroundColor: "#f4f6f9",
-    padding: "20px",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+  },
+  title: {
+    color: "#2C3E50",
+    textAlign: "center",
+    marginBottom: "2rem",
+    fontSize: "2rem",
+    fontWeight: "700",
+    paddingBottom: "0.5rem"
+  },
+  cardContainer: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+    gap: "1.5rem",
+    width: "100%",
+    maxWidth: "1200px",
+    margin: "0 auto"
   },
   card: {
-    width: "100%",
-    maxWidth: "600px",
     backgroundColor: "#fff",
     borderRadius: "8px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-    overflow: "hidden",
+    padding: "1.5rem",
+    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
+    position: "relative",
+    transition: "transform 0.2s ease",
+    ":hover": {
+      transform: "translateY(-5px)",
+      boxShadow: "0 4px 15px rgba(0, 0, 0, 0.1)"
+    }
   },
-  cardHeader: {
-    backgroundColor: "#2C3E50",
-    color: "white",
-    fontSize: "1.5rem",
-    padding: "15px",
-    textAlign: "center",
+  productName: {
+    color: "#2C3E50",
+    fontSize: "1.25rem",
+    fontWeight: "600",
+    marginBottom: "0.5rem",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
   },
-  cardBody: {
-    padding: "20px",
+  productIcon: {
+    color: "#3498db"
   },
-  cardFooter: {
-    padding: "15px",
-    textAlign: "center",
-    backgroundColor: "#f8f9fa",
-  },
-  fieldset: {
-    border: "none",
-    margin: "0",
-    padding: "0",
-  },
-  legend: {
-    fontSize: "1.2rem",
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: "15px",
-  },
-  formGroup: {
+  category: {
+    color: "#7f8c8d",
+    fontSize: "0.9rem",
     marginBottom: "1rem",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
   },
-  label: {
-    fontWeight: "bold",
-    color: "#555",
-    marginBottom: "8px",
-    display: "block",
+  categoryIcon: {
+    color: "#95a5a6"
   },
-  input: {
-    width: "100%",
-    padding: "10px",
+  stockContainer: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "1rem"
+  },
+  stock: {
+    color: "#2C3E50",
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
+  },
+  stockIcon: {
+    color: "#2ecc71"
+  },
+  price: {
+    color: "#2C3E50",
+    fontWeight: "600",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
+  },
+  priceIcon: {
+    color: "#f39c12"
+  },
+  lowStockBadge: {
+    position: "absolute",
+    top: "10px",
+    right: "10px",
+    backgroundColor: "#f8d7da",
+    color: "#721c24",
+    padding: "0.25rem 0.5rem",
     borderRadius: "4px",
-    border: "1px solid #ccc",
+    fontSize: "0.75rem",
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.25rem"
   },
-  alert: {
-    color: "#d9534f",
-    marginTop: "15px",
+  alertContainer: {
+    backgroundColor: "#f8d7da",
+    borderLeft: "4px solid #dc3545",
+    padding: "1rem",
+    borderRadius: "6px",
+    marginBottom: "2rem",
+    maxWidth: "1200px",
+    margin: "0 auto 2rem",
+    boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+  },
+  alertTitle: {
+    color: "#dc3545",
+    fontSize: "1.1rem",
+    fontWeight: "600",
+    marginBottom: "0.5rem",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
+  },
+  alertIcon: {
+    fontSize: "1.2rem"
+  },
+  alertGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
+    gap: "0.5rem"
+  },
+  alertItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    padding: "0.5rem 0",
+    borderBottom: "1px solid #f1aeb5"
+  },
+  alertProduct: {
+    fontWeight: "500",
+    color: "#212529"
+  },
+  alertStock: {
+    color: "#dc3545",
+    fontWeight: "500"
+  },
+  noProducts: {
     textAlign: "center",
+    gridColumn: "1 / -1",
+    color: "#7f8c8d",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "1rem",
+    padding: "2rem"
   },
-  button: {
-    padding: "10px 20px",
-    borderRadius: "5px",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "1rem",
-    color: "white",
-    backgroundColor: "#007bff",
+  noProductsIcon: {
+    fontSize: "2rem",
+    color: "#bdc3c7"
   },
+  loadingContainer: {
+    textAlign: "center",
+    color: "#2C3E50",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "1rem",
+    padding: "2rem"
+  },
+  loadingIcon: {
+    fontSize: "2rem",
+    color: "#2C3E50"
+  }
 };
+

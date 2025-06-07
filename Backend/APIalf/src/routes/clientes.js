@@ -1,5 +1,4 @@
 import express from "express";
-import { validationResult } from 'express-validator';
 import {
   actualizarCliente,
   borrarCliente,
@@ -7,47 +6,23 @@ import {
   obtenerClientePorId,
   obtenerClientes,
 } from "../controllers/controladorcliente.js";
-
+import { verificarToken, soloAdmin } from "../midleware/auth.js";
 
 const routes = express.Router();
 
 /**
  * @swagger
- * components:
- *   schemas:
- *     Cliente:
- *       type: object
- *       properties:
- *         nombre:
- *           type: string
- *           description: Nombre del Cliente
- *         email:
- *           type: string
- *           description: Email del Cliente
- *         telefono:
- *           type: number
- *           description: Teléfono del Cliente
- *         direccion:
- *           type: string
- *           description: Dirección del Cliente
- *       required:
- *         - nombre
- *         - email
- *         - telefono
- *         - direccion
- *       example:
- *         nombre: "Juan Perez"
- *         email: "juan_perez@gmail.com"
- *         telefono: 3267890432
- *         direccion: "Calle Falsa 123"
+ * tags:
+ *   name: Clientes
+ *   description: Registro de usuarios y gestión de clientes (admin)
  */
 
 /**
  * @swagger
  * /api/clientes:
  *   post:
- *     summary: Crea un nuevo cliente
- *     tags: [clientes]
+ *     summary: Registrar un nuevo cliente (registro público)
+ *     tags: [Clientes]
  *     requestBody:
  *       required: true
  *       content:
@@ -55,8 +30,10 @@ const routes = express.Router();
  *           schema:
  *             $ref: '#/components/schemas/Cliente'
  *     responses:
- *       200:
- *         description: Cliente creado exitosamente
+ *       201:
+ *         description: Cliente creado correctamente
+ *       400:
+ *         description: Error en los datos de entrada
  */
 routes.post("/", crearCliente);
 
@@ -64,56 +41,56 @@ routes.post("/", crearCliente);
  * @swagger
  * /api/clientes:
  *   get:
- *     summary: Obtiene todos los clientes
- *     tags: [clientes]
+ *     summary: Obtener todos los clientes (solo admin)
+ *     tags: [Clientes]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de clientes
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Cliente'
+ *       403:
+ *         description: Acceso denegado
  */
-routes.get("/", obtenerClientes);
+routes.get("/", verificarToken, soloAdmin, obtenerClientes);
 
 /**
  * @swagger
  * /api/clientes/{id}:
  *   get:
- *     summary: Obtiene un cliente por ID
- *     tags: [clientes]
+ *     summary: Obtener un cliente por ID (solo admin)
+ *     tags: [Clientes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
+ *         description: ID del cliente
  *         schema:
  *           type: string
- *         description: ID del cliente
  *     responses:
  *       200:
- *         description: Información del cliente
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Cliente'
+ *         description: Cliente encontrado
+ *       404:
+ *         description: Cliente no encontrado
  */
-routes.get("/:id", obtenerClientePorId);
+routes.get("/:id", verificarToken, soloAdmin, obtenerClientePorId);
 
 /**
  * @swagger
  * /api/clientes/{id}:
  *   put:
- *     summary: Actualiza un cliente por ID
- *     tags: [clientes]
+ *     summary: Actualizar un cliente (solo admin)
+ *     tags: [Clientes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
+ *         description: ID del cliente
  *         schema:
  *           type: string
- *         description: ID del cliente
  *     requestBody:
  *       required: true
  *       content:
@@ -124,27 +101,30 @@ routes.get("/:id", obtenerClientePorId);
  *       200:
  *         description: Cliente actualizado
  */
-routes.put("/:id", actualizarCliente);
+routes.put("/:id", verificarToken, soloAdmin, actualizarCliente);
 
 /**
  * @swagger
  * /api/clientes/{id}:
  *   delete:
- *     summary: Elimina un cliente por ID
- *     tags: [clientes]
+ *     summary: Eliminar un cliente (solo admin)
+ *     tags: [Clientes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
+ *         description: ID del cliente
  *         schema:
  *           type: string
- *         description: ID del cliente
  *     responses:
  *       200:
  *         description: Cliente eliminado
  *       404:
  *         description: Cliente no encontrado
  */
-routes.delete("/:id", borrarCliente);
+routes.delete("/:id", verificarToken, soloAdmin, borrarCliente);
 
 export default routes;
+

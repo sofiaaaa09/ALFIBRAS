@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-// Validaciones existentes
+
 const numero_producto = Joi.number().required().messages({
   "number.base": "El campo numero_producto debe ser un número.",
   "any.required": "El numero_producto es un campo requerido.",
@@ -36,7 +36,7 @@ const categoria_nombre = Joi.string().optional().messages({
   "string.base": "El campo categoria_nombre debe ser una cadena de texto.",
 });
 
-// Esquemas de validación
+
 
 export const createDetalleOrdenSchema = Joi.object({
   numero_orden: Joi.string().optional(), 
@@ -52,7 +52,7 @@ export const createDetalleOrdenSchema = Joi.object({
   total: Joi.number().positive().required()
 });
 
-// Para consultar o buscar por parámetros
+
 export const getDetalleOrdenParamsSchema = Joi.object({
   id: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
     "string.pattern.base": "El campo ID debe ser un ObjectId válido.",
@@ -63,18 +63,18 @@ export const getDetalleOrdenParamsSchema = Joi.object({
   }),
 });
 
-// Para actualizar un detalle de orden
+
 export const updateDetalleOrdenSchema = Joi.object({
   numero_producto,
-  producto_nombre, // Incluido como opcional
-  categoria_nombre, // Incluido como opcional
+  producto_nombre,
+  categoria_nombre, 
   cantidad,
   precio_unitario,
   personalizacion,
   archivo,
 });
 
-// Para borrar un detalle de orden
+
 export const deleteDetalleOrdenSchema = Joi.object({
   id: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
     "string.pattern.base": "El campo ID debe ser un ObjectId válido.",

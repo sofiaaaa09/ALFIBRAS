@@ -6,45 +6,22 @@ import {
   actualizarInventario,
   borrarInventario,
 } from "../controllers/controladorinventario.js";
+import { verificarToken, soloAdmin } from "../midleware/auth.js";
 
 const routes = express.Router();
 
 /**
  * @swagger
- * components:
- *   schemas:
- *     Inventario:
- *       type: object
- *       properties:
- *         producto:
- *           type: string
- *           description: El producto mantiene un solo inventario
- *         stock:
- *           type: number
- *           description: Cantidad de productos disponibles
- *         stock_min:
- *           type: number
- *           description: Nivel mínimo de stock
- *         stock_max:
- *           type: number
- *           description: Nivel máximo de stock
- *       required:
- *         - producto
- *         - stock
- *         - stock_min
- *         - stock_max
- *       example:
- *         producto: Puerta
- *         stock: 50
- *         stock_min: 10
- *         stock_max: 200
+ * tags:
+ *   name: Inventarios
+ *   description: Endpoints para la gestión de inventarios (solo admin)
  */
 
 /**
  * @swagger
  * /api/inventarios:
  *   post:
- *     summary: Crea un nuevo inventario
+ *     summary: Crear un nuevo inventario
  *     tags: [Inventarios]
  *     security:
  *       - bearerAuth: []
@@ -55,36 +32,30 @@ const routes = express.Router();
  *           schema:
  *             $ref: '#/components/schemas/Inventario'
  *     responses:
- *       200:
- *         description: Inventario creado exitosamente
+ *       201:
+ *         description: Inventario creado
  */
-routes.post("/", crearInventario);
+routes.post("/", verificarToken, soloAdmin, crearInventario);
 
 /**
  * @swagger
  * /api/inventarios:
  *   get:
- *     summary: Obtiene todos los inventarios
+ *     summary: Obtener todos los inventarios
  *     tags: [Inventarios]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de inventarios
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Inventario'
  */
-routes.get("/", obtenerInventarios);
+routes.get("/", verificarToken, soloAdmin, obtenerInventarios);
 
 /**
  * @swagger
  * /api/inventarios/{id}:
  *   get:
- *     summary: Obtiene un inventario por ID
+ *     summary: Obtener inventario por ID
  *     tags: [Inventarios]
  *     security:
  *       - bearerAuth: []
@@ -92,24 +63,22 @@ routes.get("/", obtenerInventarios);
  *       - in: path
  *         name: id
  *         required: true
+ *         description: ID del inventario
  *         schema:
  *           type: string
- *         description: ID del inventario
  *     responses:
  *       200:
- *         description: Información del inventario
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Inventario'
+ *         description: Inventario encontrado
+ *       404:
+ *         description: Inventario no encontrado
  */
-routes.get("/:id", obtenerInventarioPorId);
+routes.get("/:id", verificarToken, soloAdmin, obtenerInventarioPorId);
 
 /**
  * @swagger
  * /api/inventarios/{id}:
  *   put:
- *     summary: Actualiza un inventario por ID
+ *     summary: Actualizar inventario
  *     tags: [Inventarios]
  *     security:
  *       - bearerAuth: []
@@ -119,7 +88,6 @@ routes.get("/:id", obtenerInventarioPorId);
  *         required: true
  *         schema:
  *           type: string
- *         description: ID del inventario
  *     requestBody:
  *       required: true
  *       content:
@@ -128,15 +96,15 @@ routes.get("/:id", obtenerInventarioPorId);
  *             $ref: '#/components/schemas/Inventario'
  *     responses:
  *       200:
- *         description: Inventario actualizado exitosamente
+ *         description: Inventario actualizado
  */
-routes.put("/:id", actualizarInventario);
+routes.put("/:id", verificarToken, soloAdmin, actualizarInventario);
 
 /**
  * @swagger
  * /api/inventarios/{id}:
  *   delete:
- *     summary: Elimina un inventario por ID
+ *     summary: Eliminar inventario
  *     tags: [Inventarios]
  *     security:
  *       - bearerAuth: []
@@ -146,13 +114,10 @@ routes.put("/:id", actualizarInventario);
  *         required: true
  *         schema:
  *           type: string
- *         description: ID del inventario
  *     responses:
  *       200:
- *         description: Inventario eliminado exitosamente
- *       404:
- *         description: Inventario no encontrado
+ *         description: Inventario eliminado
  */
-routes.delete("/:id", borrarInventario);
+routes.delete("/:id", verificarToken, soloAdmin, borrarInventario);
 
 export default routes;

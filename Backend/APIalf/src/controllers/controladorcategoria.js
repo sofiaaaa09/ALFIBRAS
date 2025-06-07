@@ -20,7 +20,7 @@ export const crearCategoria = [
 
     try {
       const categoriaCreada = await categoria.save();
-      res.status(201).json(categoriaCreada);  // Retorna el objeto recién creado
+      res.status(201).json(categoriaCreada); 
     } catch (error) {
       res.status(500).json({ message: error.message });
     }

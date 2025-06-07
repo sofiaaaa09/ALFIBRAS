@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 
 
@@ -23,7 +23,7 @@ const clienteSchema = mongoose.Schema({
   rol: {
     type: String,
     default: "Usuario",
-    enum: ["Usuario", "Administrador"], 
+    enum: ["usuario", "admin"], 
   },
   password: {
     type: String,

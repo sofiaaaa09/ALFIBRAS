@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const detalleOrdenSchema = mongoose.Schema({
   numero_orden: {
-    type: String, // Este será generado automáticamente
+    type: String,
     required: true,
   },
   productos: [{

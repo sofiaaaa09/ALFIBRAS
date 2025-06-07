@@ -30,10 +30,15 @@ const email = Joi.string()
     "any.required": "El email es requerido.",
   });
 
-const telefono = Joi.number()
+
+const telefono = Joi.alternatives()
+  .try(
+    Joi.number(),
+    Joi.string().pattern(/^\d+$/)
+  )
   .required()
   .messages({
-    "number.base": "El teléfono debe ser un número.",
+    "alternatives.types": "El teléfono debe ser un número o una cadena de dígitos.",
     "any.required": "El teléfono es requerido.",
   });
 
@@ -49,9 +54,13 @@ const direccion = Joi.string()
     "any.required": "La dirección es requerida.",
   });
 
-const rol = Joi.string()
-  .valid("Usuario")
-  .default("Usuario");
+  const rol = Joi.string()
+  .valid("usuario", "admin") 
+  .default("Usuario")
+  .messages({
+    "any.only": "El rol solo puede ser 'Usuario' o 'admin'."
+  });
+
 
 const password = Joi.string()
   .min(6)
@@ -71,7 +80,7 @@ export const createClienteSchema = Joi.object({
   telefono,
   direccion,
   rol,
-  password, // Agregado el campo password
+  password,
 });
 
 export const updateClienteSchema = Joi.object({
@@ -80,7 +89,7 @@ export const updateClienteSchema = Joi.object({
   telefono,
   direccion,
   rol,
-  password, // Agregado el campo password en la actualización
+  password,
 });
 
 export const deleteClienteSchema = Joi.object({ id });

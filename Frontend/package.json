@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "sofia nieto",
@@ -15,7 +18,9 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sweetalert2": "^11.14.5",
-    "sweetalert2-react-content": "^5.0.7",
+    "sweetalert2-react-content": "^5.0.7"
+  },
+  "devDependencies": {
     "vite": "^5.4.11"
   }
 }

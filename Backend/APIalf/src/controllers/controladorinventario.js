@@ -1,5 +1,5 @@
 import inventarioSchema from '../models/inventarios.js';
-import productoSchema from "../models/productos.js"; // Aún lo necesitamos para verificar si el producto existe por nombre
+import productoSchema from "../models/productos.js"; 
 import { validatorHandler } from "../midleware/validator.handler.js";
 import {
   createInventarioSchema,
@@ -8,7 +8,7 @@ import {
   deleteInventarioSchema,
 } from "../validators/inventarioValidarDTO.js";  
 
-// Crear inventario
+
 export const crearInventario = [
   validatorHandler(createInventarioSchema, "body"),
   async (req, res) => {

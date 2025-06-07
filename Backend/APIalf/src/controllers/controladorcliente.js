@@ -1,6 +1,6 @@
 import { validatorHandler } from "../midleware/validator.handler.js";
 import Cliente from "../models/clientes.js";
-
+import bcrypt from 'bcrypt';
 import {
   createClienteSchema,
   deleteClienteSchema,
@@ -8,25 +8,48 @@ import {
   updateClienteSchema,
 } from "../validators/clienteValidarDTO.js";
 
+export const crearCliente = async (req, res) => {
+  try {
+    const { nombre, email, password, telefono, direccion, rol } = req.body;
 
-export const crearCliente = [
-  validatorHandler(createClienteSchema, "body"),
-  async (req, res) => {
-    const clienteData = { 
-      ...req.body, 
-      rol: "Usuario",
-      password: req.body.password,
-    };
+    console.log("\n📥 Registrando usuario:", email);
+    console.log("📝 Contraseña recibida:", password);
 
-    try {
-      const cliente = new Cliente(clienteData);
-      const clienteCreado = await cliente.save();
-      res.status(201).json({ cliente: clienteCreado });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
+    const existeEmail = await Cliente.findOne({ email });
+    if (existeEmail) {
+      return res.status(400).json({ message: 'El correo ya está registrado.' });
     }
-  },
-];
+
+    const nuevoCliente = new Cliente({
+      nombre,
+      email,
+      password,  
+      telefono,
+      direccion,
+      rol: rol?.toLowerCase() || 'usuario',
+    });
+
+    const clienteGuardado = await nuevoCliente.save();
+
+    console.log("📦 Guardado en base de datos: alfibras\n");
+
+    res.status(201).json({
+      message: 'Cliente registrado exitosamente',
+      cliente: {
+        id: clienteGuardado._id,
+        nombre: clienteGuardado.nombre,
+        email: clienteGuardado.email,
+        telefono: clienteGuardado.telefono,
+        direccion: clienteGuardado.direccion,
+        rol: clienteGuardado.rol,
+      }
+    });
+  } catch (error) {
+    console.error('🔥 Error al registrar cliente:', error.message);
+    res.status(500).json({ message: 'Error al registrar el cliente', error: error.message });
+  }
+};
+
 
 
 export const obtenerClientes = async (req, res) => {
