@@ -77,7 +77,7 @@ export const crearDetalleOrden = [
       }
 
       // Generar número de orden 
-      const ultimaOrden = await ordenSchema.findOne().sort({ numero_orden: -1 });
+      const ultimaOrden = (await ordenSchema.find().sort({ numero_orden: -1 }).limit(1))[0];
       const numeroOrden = ultimaOrden ? 
         (parseInt(ultimaOrden.numero_orden) + 1).toString() : "1";
 

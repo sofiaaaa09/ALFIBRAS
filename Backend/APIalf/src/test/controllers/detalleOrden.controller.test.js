@@ -54,6 +54,74 @@ describe('Controlador DetalleOrden', () => {
     mockOrdenFindOne.mockReset();
   });
 
+  describe('crearDetalleOrden', () => {
+    it('debe crear un detalle exitosamente', async () => {
+      req.body = {
+        productos: [
+          {
+            numero_producto: "PROD001",
+            producto_nombre: "Producto 1",
+            categoria_nombre: "Categoria 1",
+            cantidad: 2,
+            precio_unitario: 5000
+          }
+        ],
+        total: 10000,
+        personalizacion: "azul",
+        archivo: null
+      };
+
+      mockProductoFind.mockResolvedValue([{ numero_producto: "PROD001" }]);
+      ordenSchema.find = jest.fn(() => ({
+  sort: jest.fn(() => ({
+    limit: jest.fn(() => Promise.resolve([{ numero_orden: "5" }]))
+  }))
+}));
+      mockSave.mockResolvedValue({
+        _id: "detalle123",
+        ...req.body,
+        numero_orden: "6"
+      });
+
+      await crearDetalleOrden[1](req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        code: "DETALLE_CREADO"
+      }));
+    });
+
+    it('debe manejar errores al crear detalle', async () => {
+      req.body = {
+        productos: [
+          {
+            numero_producto: 'PROD002',
+            producto_nombre: 'Producto 2',
+            categoria_nombre: 'Categoria 2',
+            cantidad: 1,
+            precio_unitario: 6000
+          }
+        ],
+        total: 6000,
+        personalizacion: 'blanco',
+        archivo: null
+      };
+
+      mockProductoFind.mockResolvedValue([{ numero_producto: 'PROD002' }]);
+      mockOrdenFindOne.mockResolvedValue({ numero_orden: "10" });
+      mockSave.mockRejectedValue(new Error('DB error'));
+
+      await crearDetalleOrden[1](req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        code: "ERROR_SERVIDOR"
+      }));
+    });
+  });
+
   describe('obtenerDetallesOrden', () => {
     it('debe retornar detalles si existen', async () => {
       mockFind.mockResolvedValue([{ numero_orden: '1' }]);
@@ -119,7 +187,7 @@ describe('Controlador DetalleOrden', () => {
       const mockUpdated = { _id: "detalle123", ...req.body };
       mockFindByIdAndUpdate.mockResolvedValue(mockUpdated);
 
-      await actualizarDetalleOrden[2](req, res); // Ejecutamos el tercer middleware (controlador real)
+      await actualizarDetalleOrden[2](req, res);
 
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         success: true,
@@ -129,7 +197,11 @@ describe('Controlador DetalleOrden', () => {
 
     it('debe retornar 404 si el detalle no existe', async () => {
       req.params.id = 'noExiste';
-      req.body = { productos: [{ numero_producto: "1", cantidad: 1, precio_unitario: 1000 }], total: 1000 };
+      req.body = {
+        productos: [{ numero_producto: "1", cantidad: 1, precio_unitario: 1000 }],
+        total: 1000
+      };
+
       mockFindByIdAndUpdate.mockResolvedValue(null);
 
       await actualizarDetalleOrden[2](req, res);

@@ -1,1 +1,15 @@
-node_modules
+# ignora node_modules
+node_modules/
+
+# ignora archivos de sistema
+.DS_Store
+Thumbs.db
+
+# ignora entorno de desarrollo
+.env
+.vscode/
+.idea/
+
+# ignora dist
+dist/
+build/

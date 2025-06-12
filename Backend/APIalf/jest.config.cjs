@@ -1,5 +1,9 @@
 ﻿module.exports = {
   testEnvironment: 'node',
+ maxWorkers: 1,  
+  detectOpenHandles: true,
+  forceExit: true,
+  setupFilesAfterEnv: ['./jest.setup.js'],
   transform: {
     '^.+\\.js$': 'babel-jest',
   },

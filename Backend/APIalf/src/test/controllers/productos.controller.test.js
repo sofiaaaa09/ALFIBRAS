@@ -100,8 +100,8 @@ describe('Controlador de Productos', () => {
   describe('crearProducto', () => {
     it('debería crear producto con número autoincremental correctamente', async () => {
       const req = mockRequest({
-        nombre: 'Taladro',
-        descripcion: 'Taladro inalámbrico',
+        nombre: 'Puerta trafic',
+        descripcion: 'Puerta para trafic 30x30',
         precio: 250000,
         categoria: '6543d5e4e4a4f4a4f4a4f4a4',
         cantidad_inicial: 15,
@@ -191,8 +191,8 @@ describe('Controlador de Productos', () => {
       const res = mockResponse();
       const mockProducto = {
         _id: '6543d5e4e4a4f4a4f4a4f4a4',
-        nombre: 'Martillo',
-        categoria: { nombre_categoria: 'Herramientas' }
+        nombre: 'Puerta trafic',
+        categoria: { nombre_categoria: 'Puertas' }
       };
 
       // Configurar mock

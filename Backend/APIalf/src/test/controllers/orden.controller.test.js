@@ -1,260 +1,227 @@
-import { crearOrden, obtenerOrdenes, obtenerOrdenPorId, actualizarOrden, eliminarOrden } from '../../controllers/controladororden.js';
-import mongoose from 'mongoose';
-
-// ✅ PRIMERO: define los mocks
-const mockFind = jest.fn();
-const mockFindById = jest.fn();
-const mockFindByIdAndUpdate = jest.fn();
-const mockFindByIdAndDelete = jest.fn();
-const mockSave = jest.fn();
-
-// ✅ LUEGO: haz el mock del modelo
-jest.mock('../../models/ordenes', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({ save: mockSave })),
-  find: mockFind,
-  findById: mockFindById,
-  findByIdAndUpdate: mockFindByIdAndUpdate,
-  findByIdAndDelete: mockFindByIdAndDelete
-}));
-
-
+import * as controladorOrden from '../../controllers/controladororden.js';
 import ordenSchema from '../../models/ordenes.js';
+import detalleOrdenSchema from '../../models/detalle_ordenes.js';
 
-// Mock del modelo detalleOrdenSchema
-jest.mock('../../models/detalle_ordenes.js', () => {
-  const mockDetalleDocs = [
-    { producto: { nombre: 'Producto 1' }, cantidad: 2 },
-    { producto: { nombre: 'Producto 2' }, cantidad: 3 }
-  ];
+jest.mock('../../models/ordenes.js');
+jest.mock('../../models/detalle_ordenes.js');
+
+// Mock para .populate()
+function mockQuery(result) {
   return {
-    find: jest.fn().mockResolvedValue(mockDetalleDocs)
+    populate: jest.fn().mockReturnThis(),
+    exec: jest.fn().mockResolvedValue(result)
   };
-});
+}
 
-describe('Controlador de órdenes', () => {
+describe('Controlador de Órdenes', () => {
+  let req, res;
 
-  afterEach(() => {
+  beforeEach(() => {
+    req = { body: {}, params: {} };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
+    };
+
     jest.clearAllMocks();
   });
 
   describe('crearOrden', () => {
-    it('debería crear una orden correctamente', async () => {
-      const req = {
-        body: {
-          cliente: new mongoose.Types.ObjectId(),
-          fecha: new Date(),
-          estado: 'pendiente',
-          detalles: [new mongoose.Types.ObjectId()]
-        }
+    it('debe crear una orden correctamente', async () => {
+      req.body = {
+        cliente_correo: 'cliente@example.com',
+        estado: 'pendiente',
+        fecha: '2025-06-10',
+        detalles: [
+          {
+            producto_id: 'prod1',
+            producto_nombre: 'Producto A',
+            categoria_nombre: 'General',
+            cantidad: 2,
+            precio_unitario: 100
+          }
+        ]
       };
 
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
+      ordenSchema.mockImplementation(() => ({
+        save: jest.fn().mockResolvedValue({
+          _id: 'orden123',
+          ...req.body,
+          total: 200,
+          numero_orden: 'ORD-20250610-001'
+        })
+      }));
 
-      mockSave.mockResolvedValue({ _id: 'orden123' });
+      await controladorOrden.crearOrden[1](req, res);
 
-      await crearOrden(req, res);
-
-      expect(mockSave).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({ _id: 'orden123' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        code: 'ORDEN_CREADA'
+      }));
     });
 
-    it('debería manejar errores al crear una orden', async () => {
-      const req = {
-        body: {
-          cliente: new mongoose.Types.ObjectId(),
-          fecha: new Date(),
-          estado: 'pendiente',
-          detalles: [new mongoose.Types.ObjectId()]
-        }
+    it('debe retornar 400 si el cliente no incluye productos', async () => {
+      req.body = {
+        cliente_correo: 'cliente@example.com',
+        detalles: []
       };
 
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
+      await controladorOrden.crearOrden[1](req, res);
 
-      const error = new Error('Error al guardar');
-      mockSave.mockRejectedValue(error);
-
-      await crearOrden(req, res);
-
-      expect(mockSave).toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ mensaje: 'Error al crear la orden', error: error.message });
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        code: 'SIN_PRODUCTOS'
+      }));
     });
   });
 
   describe('obtenerOrdenes', () => {
-    it('debería retornar todas las órdenes', async () => {
-      const ordenesMock = [{ _id: 'orden1' }, { _id: 'orden2' }];
-      mockFind.mockResolvedValue(ordenesMock);
+    it('debe devolver órdenes correctamente', async () => {
+      ordenSchema.find.mockReturnValueOnce({
+        populate: jest.fn().mockResolvedValue([
+          { _id: '1', numero_orden: 'ORD001' }
+        ])
+      });
 
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
+      await controladorOrden.obtenerOrdenes(req, res);
 
-      await obtenerOrdenes({}, res);
-
-      expect(mockFind).toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(ordenesMock);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        code: 'ORDENES_ENCONTRADAS',
+        data: expect.any(Array)
+      }));
     });
 
-    it('debería manejar errores al obtener órdenes', async () => {
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
-      mockFind.mockRejectedValue(new Error('Error DB'));
+    it('debe manejar error de base de datos', async () => {
+      ordenSchema.find.mockImplementation(() => ({
+        populate: () => {
+          throw new Error('DB error');
+        }
+      }));
 
-      await obtenerOrdenes({}, res);
+      await controladorOrden.obtenerOrdenes(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ mensaje: 'Error al obtener las órdenes' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        code: 'ERROR_OBTENER_ORDENES'
+      }));
     });
   });
 
   describe('obtenerOrdenPorId', () => {
-    it('debería retornar una orden por ID', async () => {
-      const ordenMock = { _id: 'orden123' };
-      mockFindById.mockResolvedValue(ordenMock);
+    it('debe devolver una orden por ID', async () => {
+      const ordenMock = { _id: '1', numero_orden: 'ORD001' };
+      req.params.id = '1';
 
-      const req = { params: { id: 'orden123' } };
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
+      ordenSchema.findById.mockReturnValueOnce({
+        populate: jest.fn().mockResolvedValue(ordenMock)
+      });
 
-      await obtenerOrdenPorId(req, res);
+      await controladorOrden.obtenerOrdenPorId[1](req, res);
 
-      expect(mockFindById).toHaveBeenCalledWith('orden123');
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(ordenMock);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        data: ordenMock
+      }));
     });
 
-    it('debería retornar 404 si la orden no existe', async () => {
-      mockFindById.mockResolvedValue(null);
+    it('debe retornar 404 si no encuentra la orden', async () => {
+      req.params.id = 'noExiste';
 
-      const req = { params: { id: 'ordenInexistente' } };
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
+      ordenSchema.findById.mockReturnValueOnce({
+        populate: jest.fn().mockResolvedValue(null)
+      });
 
-      await obtenerOrdenPorId(req, res);
+      await controladorOrden.obtenerOrdenPorId[1](req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ mensaje: 'Orden no encontrada' });
-    });
-
-    it('debería manejar errores al buscar orden por ID', async () => {
-      mockFindById.mockRejectedValue(new Error('Error DB'));
-
-      const req = { params: { id: 'orden123' } };
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
-
-      await obtenerOrdenPorId(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ mensaje: 'Error al obtener la orden' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        code: 'ORDEN_NO_ENCONTRADA'
+      }));
     });
   });
 
   describe('actualizarOrden', () => {
-    it('debería actualizar una orden por ID', async () => {
-      const ordenActualizada = { _id: 'orden123', estado: 'enviado' };
-      mockFindByIdAndUpdate.mockResolvedValue(ordenActualizada);
-
-      const req = {
-        params: { id: 'orden123' },
-        body: { estado: 'enviado' }
+    it('debe actualizar correctamente una orden', async () => {
+      req.params.id = 'orden123';
+      req.body = {
+        cliente_correo: 'cliente@correo.com',
+        estado: 'completada',
+        detalles: ['detalle1']
       };
 
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
+      detalleOrdenSchema.find.mockResolvedValue([
+        { _id: 'detalle1', cantidad: 1, precio_unitario: 100 }
+      ]);
 
-      await actualizarOrden(req, res);
+      ordenSchema.findByIdAndUpdate.mockReturnValueOnce({
+        populate: jest.fn().mockResolvedValue({
+          _id: 'orden123',
+          estado: 'completada'
+        })
+      });
 
-      expect(mockFindByIdAndUpdate).toHaveBeenCalledWith('orden123', { estado: 'enviado' }, { new: true });
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(ordenActualizada);
+      await controladorOrden.actualizarOrden[2](req, res);
+
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        code: 'ORDEN_ACTUALIZADA'
+      }));
     });
 
-    it('debería manejar errores al actualizar', async () => {
-      mockFindByIdAndUpdate.mockRejectedValue(new Error('Error al actualizar'));
-
-      const req = {
-        params: { id: 'orden123' },
-        body: { estado: 'enviado' }
-      };
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
+    it('debe retornar 404 si la orden no existe', async () => {
+      req.params.id = 'noExiste';
+      req.body = {
+        cliente_correo: 'cliente@correo.com',
+        detalles: ['detalleX']
       };
 
-      await actualizarOrden(req, res);
+      detalleOrdenSchema.find.mockResolvedValue([
+        { _id: 'detalleX', cantidad: 1, precio_unitario: 100 }
+      ]);
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ mensaje: 'Error al actualizar la orden' });
+      ordenSchema.findByIdAndUpdate.mockReturnValueOnce({
+        populate: jest.fn().mockResolvedValue(null)
+      });
+
+      await controladorOrden.actualizarOrden[2](req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        code: 'ORDEN_NO_ENCONTRADA'
+      }));
     });
   });
 
-  describe('eliminarOrden', () => {
-    it('debería eliminar una orden por ID', async () => {
-      mockFindByIdAndDelete.mockResolvedValue({ _id: 'orden123' });
+  describe('borrarOrden', () => {
+    it('debe eliminar correctamente una orden', async () => {
+      req.params.id = 'orden123';
 
-      const req = { params: { id: 'orden123' } };
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
+      ordenSchema.findByIdAndDelete.mockResolvedValue({
+        _id: 'orden123',
+        numero_orden: 'ORD001'
+      });
 
-      await eliminarOrden(req, res);
+      await controladorOrden.borrarOrden[1](req, res);
 
-      expect(mockFindByIdAndDelete).toHaveBeenCalledWith('orden123');
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ mensaje: 'Orden eliminada correctamente' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        code: 'ORDEN_ELIMINADA'
+      }));
     });
 
-    it('debería retornar 404 si la orden no existe', async () => {
-      mockFindByIdAndDelete.mockResolvedValue(null);
+    it('debe retornar 404 si la orden no existe', async () => {
+      req.params.id = 'noExiste';
 
-      const req = { params: { id: 'ordenInexistente' } };
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
+      ordenSchema.findByIdAndDelete.mockResolvedValue(null);
 
-      await eliminarOrden(req, res);
+      await controladorOrden.borrarOrden[1](req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ mensaje: 'Orden no encontrada' });
-    });
-
-    it('debería manejar errores al eliminar', async () => {
-      mockFindByIdAndDelete.mockRejectedValue(new Error('Error al eliminar'));
-
-      const req = { params: { id: 'orden123' } };
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
-      };
-
-      await eliminarOrden(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ mensaje: 'Error al eliminar la orden' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        code: 'ORDEN_NO_ENCONTRADA'
+      }));
     });
   });
 });
